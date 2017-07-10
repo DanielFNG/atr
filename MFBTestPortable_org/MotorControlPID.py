@@ -11,7 +11,7 @@ This is the template for logging data
 
 import sys
 #from DrvEMG import DrvEMG
-from pydrvmfb import pydrvmfb 
+from pydrvmfb import pydrvmfb
 from pydrvmfb_basic import pydrvmfb_basic 
 from pymfbmultictrl import pymfbmultictrl
 from pyrealtime import pyrealtime
@@ -29,6 +29,37 @@ f_init=False
 class Usage(Exception):
 	def __init__(self, msg):
 		self.msg = msg
+
+def calculateProportionalError(reference, measured):
+	return reference - measured
+
+def calculateIntegralError(error, total):
+	return total + error
+
+def calculateDerivativeError(timestep, error, previous_error):
+	return (error - previous_error)/timestep
+
+def PID(reference, measured, total, previous_error, delta):
+	'''
+	Performs PID control at point in time (t). Requires a value
+	corresponding to some reference trajectory, the corresponding measured
+	value, the total error from any previous steps, the error from the
+	immediately preceding step, and the timestep (for doing a simple one-step
+	derivative calculation)
+	'''
+
+	# Gains
+	K_p = 50
+	K_i = 0.06
+	K_d = 0.6
+	# Calculate error terms
+	error = calculateProportionalError(reference, measured)
+	total_error = calculateIntegralError(error, total)
+	derivative = calculateDerivativeError(delta, error, previous_error)
+
+	# Calculate and return control control
+	control = K_p * error + K_i * total_error + K_d * derivative
+	return control, error, total_error
 
 def generatedrivers(freq,f_basic=False,f_rtnet=True):
 	global f_init
@@ -57,6 +88,17 @@ def main(argv=None, freq=100, exptime=10, drivers=None, f_basic=False, f_rtnet =
 #def main(argv=None, freq=1000, exptime=2, drivers=None):
 
 	nloop = exptime * freq
+
+	##### Perform some initial setup for the PID control.
+
+	# Load reference trajectory.
+	reference = scipy.io.loadmat('stationary_ref_traj.mat')
+	reference_trajectory = reference['stationary_ref_traj']
+	#reference_trajectory[:,0] = (2.0*np.pi)/(220092.0) * (reference_trajectory[:,0] - reference_trajectory[0,0])
+
+	# Initialise total error and previous error to 0.
+	total_error = 0
+	previous_error = 0
 
 	if f_basic==True:
 		results = {
@@ -91,39 +133,58 @@ def main(argv=None, freq=100, exptime=10, drivers=None, f_basic=False, f_rtnet =
 
 	for loop_ct in range(nloop):
 		drivers["rtmodule"].wait()
-		# results['time'][:loop_ct,:]= lap[loop_ct] = drivers["rtmodule"].readtime()
+		#results['time'][:loop_ct,:]= lap[loop_ct] = drivers["rtmodule"].readtime()
 		lap[loop_ct] = drivers["rtmodule"].readtime()
 		results['time'][loop_ct,:]= time.time()
 		drivers["multictrl"].get_prepare()
 		drivers["multictrl"].get()
 		results['ad1'][loop_ct,:] = drivers["mfb1"].realvalue['ad'][:]
-		results['raw_counter1'][loop_ct,:]= np.right_shift(drivers['mfb1'].value['counter'], 8).astype(np.int64)		
-	    #results['ad2'][loop_ct,:] = drivers["mfb2"].realvalue['ad'][0:16]
-		drivers["mfb1"].realvalue['da'][0] = 10* float(loop_ct)/float(nloop)
-		if loop_ct > 100:
-			drivers["mfb1"].realvalue['da'][2] = 2.0
+		results['raw_counter1'][loop_ct,:]= np.right_shift(drivers['mfb1'].value['counter'], 8).astype(np.int64)
+		#results['ad2'][loop_ct,:] = drivers["mfb2"].realvalue['ad'][0:16]
+
+		# Convert the output of the encoder in to radians, and normalise
+		# compared to its initial value.
+		encoder_value = (2.0*np.pi)/220092*(results['raw_counter1'][loop_ct,0] - results['raw_counter1'][0,0])
+
+		# Don't actuate the pneumatic actuators.
+		drivers["mfb1"].realvalue['da'][0] = 0.0
+		drivers["mfb1"].realvalue['da'][1] = 0.0
+
+		# Use PID to control motor.
+		drivers["mfb1"].realvalue['da'][2], previous_error, total_error = PID(reference_trajectory[loop_ct,0], encoder_value, total_error, previous_error, 1.0/freq)
+		drivers["mfb1"].realvalue['da'][2] = -drivers["mfb1"].realvalue['da'][2]
+
+		# Print the motor command for refrence.
+		print drivers["mfb1"].realvalue['da'][2]
+
+		# Stop execution if the motor output gets too big.
+		if drivers["mfb1"].realvalue['da'][2] > 5.0 or drivers["mfb1"].realvalue['da'][2] < -5.0:
+			pass
+			#sys.exit("Motor command too high.")
+
+ 		if loop_ct > 100:
 			drivers["mfb1"].realvalue['IO_out'][0]=0
-		
+
 		results['ad1'][loop_ct,:] = drivers["mfb1"].realvalue['ad'][0:16]
 		results['da1'][loop_ct,:] = drivers["mfb1"].realvalue['da'][0:8]
-		print "loopct =%d, ad = %3.4f" % (loop_ct, results['ad1'][loop_ct,8])
+                print "loopct =%d, ad = %3.4f" % (loop_ct, results['ad1'][loop_ct,8])
 		if loop_ct % freq == 0:
 			print "."
-		# output 
-		drivers["multictrl"].put_prepare()
+		# output
+ 		drivers["multictrl"].put_prepare()
 		drivers["multictrl"].put()
-        drivers["multictrl"].put_post()
+ 		drivers["multictrl"].put_post()
 
 	drivers["mfb1"].realvalue['da'][0:8] = 0.0
 	drivers["mfb1"].realvalue['IO_out'][0]=0
-	# output 
+	# output
 	drivers["multictrl"].put_prepare()
 	drivers["multictrl"].put()
 	drivers["multictrl"].put_post()
 
 
-	samplingtime = results['time'][:,:] - results['time'][0,:] 
-	
+	samplingtime = results['time'][:,:] - results['time'][0,:]
+
 	print "end loop"
 	return results,drivers,samplingtime
 
@@ -164,11 +225,11 @@ if __name__ == "__main__":
 	#title("lap")
 	#xlabel("sampling")
 	#ylabel("diff time[sec]")
-	#ylim([0.001980,0.002020]) 
+	#ylim([0.001980,0.002020])
 
-	savepath = "test.mat"
+	savepath = "test_pid.mat"
 	print "saving results as ", savepath
 	print "saving ..."
-	scipy.io.savemat("test03.mat",rslts)
+	scipy.io.savemat(savepath,rslts)
 	print "done."
 	#sys.exit()

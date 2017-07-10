@@ -11,7 +11,7 @@ This is the template for logging data
 
 import sys
 #from DrvEMG import DrvEMG
-from pydrvmfb import pydrvmfb 
+from pydrvmfb import pydrvmfb
 from pydrvmfb_basic import pydrvmfb_basic 
 from pymfbmultictrl import pymfbmultictrl
 from pyrealtime import pyrealtime
@@ -58,6 +58,10 @@ def main(argv=None, freq=100, exptime=10, drivers=None, f_basic=False, f_rtnet =
 
 	nloop = exptime * freq
 
+	# Set up the nominal sin wave input for the motors.
+	sin_domain = np.linspace(-1.5*exptime*np.pi,1.5*exptime*np.pi,nloop)
+	sin_range = 2*np.sin(sin_domain)
+
 	if f_basic==True:
 		results = {
 			"time":numpy.zeros((nloop,1)),
@@ -91,39 +95,52 @@ def main(argv=None, freq=100, exptime=10, drivers=None, f_basic=False, f_rtnet =
 
 	for loop_ct in range(nloop):
 		drivers["rtmodule"].wait()
-		# results['time'][:loop_ct,:]= lap[loop_ct] = drivers["rtmodule"].readtime()
+		#results['time'][:loop_ct,:]= lap[loop_ct] = drivers["rtmodule"].readtime()
 		lap[loop_ct] = drivers["rtmodule"].readtime()
 		results['time'][loop_ct,:]= time.time()
 		drivers["multictrl"].get_prepare()
 		drivers["multictrl"].get()
 		results['ad1'][loop_ct,:] = drivers["mfb1"].realvalue['ad'][:]
-		results['raw_counter1'][loop_ct,:]= np.right_shift(drivers['mfb1'].value['counter'], 8).astype(np.int64)		
-	    #results['ad2'][loop_ct,:] = drivers["mfb2"].realvalue['ad'][0:16]
-		drivers["mfb1"].realvalue['da'][0] = 10* float(loop_ct)/float(nloop)
-		if loop_ct > 100:
-			drivers["mfb1"].realvalue['da'][2] = 2.0
+		results['raw_counter1'][loop_ct,:]= np.right_shift(drivers['mfb1'].value['counter'], 8).astype(np.int64)
+		#results['ad2'][loop_ct,:] = drivers["mfb2"].realvalue['ad'][0:16]
+
+		# Don't actuate the pneumatic actuators.
+		drivers["mfb1"].realvalue['da'][0] = 0.0
+		drivers["mfb1"].realvalue['da'][1] = 0.0
+
+		# Actuate the motor using a nominal sin wave input.
+		if sin_range[loop_ct] > 0:
+			drivers["mfb1"].realvalue['da'][2] = sin_range[loop_ct]
+		else:
+			if sin_range[loop_ct] < -0.5:
+				drivers["mfb1"].realvalue['da'][2] = -0.25
+			else:
+				drivers["mfb1"].realvalue['da'][2] = 0.5*sin_range[loop_ct]
+
+ 		if loop_ct > 100:
+			#drivers["mfb1"].realvalue['da'][2] = 2.0
 			drivers["mfb1"].realvalue['IO_out'][0]=0
-		
+
 		results['ad1'][loop_ct,:] = drivers["mfb1"].realvalue['ad'][0:16]
 		results['da1'][loop_ct,:] = drivers["mfb1"].realvalue['da'][0:8]
-		print "loopct =%d, ad = %3.4f" % (loop_ct, results['ad1'][loop_ct,8])
+                print "loopct =%d, ad = %3.4f" % (loop_ct, results['ad1'][loop_ct,8])
 		if loop_ct % freq == 0:
 			print "."
-		# output 
-		drivers["multictrl"].put_prepare()
+		# output
+ 		drivers["multictrl"].put_prepare()
 		drivers["multictrl"].put()
-        drivers["multictrl"].put_post()
+ 		drivers["multictrl"].put_post()
 
 	drivers["mfb1"].realvalue['da'][0:8] = 0.0
 	drivers["mfb1"].realvalue['IO_out'][0]=0
-	# output 
+	# output
 	drivers["multictrl"].put_prepare()
 	drivers["multictrl"].put()
 	drivers["multictrl"].put_post()
 
 
-	samplingtime = results['time'][:,:] - results['time'][0,:] 
-	
+	samplingtime = results['time'][:,:] - results['time'][0,:]
+
 	print "end loop"
 	return results,drivers,samplingtime
 
@@ -164,11 +181,11 @@ if __name__ == "__main__":
 	#title("lap")
 	#xlabel("sampling")
 	#ylabel("diff time[sec]")
-	#ylim([0.001980,0.002020]) 
+	#ylim([0.001980,0.002020])
 
-	savepath = "test.mat"
+	savepath = "test_sin.mat"
 	print "saving results as ", savepath
 	print "saving ..."
-	scipy.io.savemat("test03.mat",rslts)
+	scipy.io.savemat(savepath,rslts)
 	print "done."
 	#sys.exit()

@@ -1,6 +1,10 @@
-clear('raw_counter_1')
-load('test2.mat')
-figure
-plot(reference_trajectory)
+figure(figtraj)
+clear('raw_counter1')
+load('test_pid.mat')
+traj = convertRefTraj(raw_counter1(1:end,1))
 hold on
-plot(raw_counter1(1:end,1))
+plot(traj)
+
+figure(figerr)
+hold on
+plot(traj - stationary_ref_traj)
