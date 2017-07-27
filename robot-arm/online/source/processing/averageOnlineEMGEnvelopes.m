@@ -4,7 +4,7 @@
 function averaged_waveforms = averageOnlineEMGEnvelopes(filtered_emg_bicep)
 
 % Import the generated reference trajectory. 
-load([getenv('ATR_HOME') filesep 'reference' filesep 'generated_ref_traj.mat']);
+load([getenv('ROBOT_ARM') filesep 'reference' filesep 'generated_ref_traj.mat']);
 
 % Peaks for the passive - considered separately due to no feedback on tracking 
 % in this mode.

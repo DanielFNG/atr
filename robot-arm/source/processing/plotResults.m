@@ -161,9 +161,9 @@ diff_y = zeros(1,size(labels,2)/2);
 for i=1:2:size(labels,2)-1
     diff_y(1,i) = 100*((max(averaged_waveforms{i}) - max(averaged_waveforms{i+1}))/max(averaged_waveforms{i}));
 end
-for i=
-diff_y(4) = [];
-diff_y(2) = [];
+for i=size(labels,2)-2:-2:2
+    diff_y(i) = [];
+end
 figure;
 bar(diff_y);
 title('Reduction in peak activity', 'FontSize', titlefont)
@@ -177,8 +177,9 @@ diff_z = zeros(1,size(labels,2)/2);
 for i=1:2:size(labels,2)-1
     diff_z(1,i) = 100*((sum(averaged_waveforms{i}) - sum(averaged_waveforms{i+1}))/sum(averaged_waveforms{i}));
 end
-diff_z(4) = [];
-diff_z(2) = [];
+for i=size(labels,2)-2:-2:2
+    diff_z(i) = [];
+end
 figure;
 bar(diff_z);
 title('Reduction in total activity', 'FontSize', titlefont)

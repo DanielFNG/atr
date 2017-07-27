@@ -22,7 +22,7 @@ elseif nargin ~= 4
 end
 
 % Get the correct path to the data depending on the mode. 
-base = [getenv('ATR_HOME') filesep];
+base = [getenv('ROBOT_ARM') filesep];
 if strcmp(mode, 'offline')
     datapath = [base 'offline' filesep 'data' filesep];
 elseif strcmp(mode, 'online')

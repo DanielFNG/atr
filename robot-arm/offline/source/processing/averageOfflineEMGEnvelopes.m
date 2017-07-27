@@ -4,7 +4,7 @@
 function averaged_waveforms = averageOfflineEMGEnvelopes(filtered_emg_bicep)
 
 % Import the generated reference trajectory. 
-load([getenv('ATR_HOME') filesep 'reference' filesep 'generated_ref_traj.mat']);
+load([getenv('ROBOT_ARM') filesep 'reference' filesep 'generated_ref_traj.mat']);
 
 % Identify the start of each oscillation. Add 150 to start as this is the
 % end of the stationary '0' part of the reference trajectory. 
