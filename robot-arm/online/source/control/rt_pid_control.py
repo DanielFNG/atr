@@ -90,8 +90,9 @@ def AddResults(core): # Addition of keys
 	# Terms for use in PID controller.
 	core.results["previous_error"] = 0
 	core.results["total_error"] = 0
-	core.results["delta"] = float(core.config["exp_time"])/core.config["freq_ctrl"]
-	core.results["nloop"] = nloop
+	core.results["delta"] = 15.0/200.0 # made a mistake with delta calculation, gains are set up for this value of exp time/freq. 
+	core.results["nloop"] = nloop	   # probably won't work as well if you change these values!! would have to retune, but it's not 
+									   # a priority 
 	
 
 def Display(results, j):

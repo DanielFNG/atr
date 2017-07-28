@@ -183,6 +183,44 @@ def main(argv=None, freq=200, exptime=1, drivers=None, stiff=50., f_basic=False 
 	"""
 #def main(argv=None, freq=1000, exptime=2, drivers=None):
 
+	#######Define interior functions for PID control###########
+	def calculateProportionalError(reference, measured):
+		return reference - measured
+
+	def calculateIntegralError(error, total):
+		return total + error
+
+	def calculateDerivativeError(timestep, error, previous_error):
+		return (error - previous_error)/float(timestep)
+
+	def PID(reference, measured, total, previous_error, delta):
+		"""
+		Performs PID control at point in time (t). Requires a value
+		corresponding to some reference trajectory, the corresponding
+		measured value, the total error from any previous steps, the 
+		error from the immediately preceding step, and the timestep
+		(for doing a simple one-step derivative calculation).
+		"""
+
+		# Gains
+		#K_p = 50.0
+		#K_i = 0.0
+		#K_d = 12.0
+		
+		## These work well for right heel. 
+		K_p = 4.0
+		K_i = 0.1
+		K_d = 0.3
+
+		# Calculate error terms
+		error = calculateProportionalError(reference, measured)
+		total_error = calculateIntegralError(error, total)
+		derivative = calculateDerivativeError(delta, error, previous_error)
+
+		# Calculate and return control
+		control = K_p * error + K_i * total_error + K_d * derivative
+		return control, error, total_error	
+
         #####################################
 	global udp2key
 	global key2udp
@@ -224,6 +262,34 @@ def main(argv=None, freq=200, exptime=1, drivers=None, stiff=50., f_basic=False 
 	print "sound_t = %3.3f" %  sound_t
 	#omega_walk = 1.0
 	sound_t = 1.5
+	
+	# Load reference trajectories. 'trajectory' is the name of the variable,
+	# also saved in the 'trajectory'.mat file. 
+	trajectory = 'tuning_ref_traj'
+	#trajectory = 'recorded_ref_traj'
+	
+	# Load and form reference trajectory array.
+	reference = scipy.io.loadmat(trajectory + '.mat')
+	ref_len = len(reference[trajectory])
+	
+	# Save the reference trajectories. 
+	if ref_len < nloop:
+		rtraj = np.zeros((nloop,2,3))
+	else:
+		rtraj = reference[trajectory]
+		
+	## Create a map from the expected to actual motor indices. This is 
+	## necessary due to an error in wiring. Having this motor map means that 
+	## if the wiring is fixed or changed it's quick to change this code. This
+	## seems to affect only the encoder results and not the input motor values.
+	motor_map = numpy.zeros((2,3))
+	motor_map[0,0] = 1
+	motor_map[0,1] = 0
+	motor_map[0,2] = 4
+	motor_map[1,0] = 0
+	motor_map[1,1] = 1
+	motor_map[1,2] = 4
+	
 	results = {
 		"time":numpy.zeros((nloop,1)),
 		"angle":numpy.zeros((nloop,1)),
@@ -258,7 +324,14 @@ def main(argv=None, freq=200, exptime=1, drivers=None, stiff=50., f_basic=False 
 		'theta':numpy.zeros((nloop,1)),
 		'theta_dot':numpy.zeros((nloop,1)),
 		'phase':numpy.zeros((nloop,1)),
-		}
+		'reference':rtraj,
+		'previous_error':numpy.zeros((2,3)),
+		'total_error':numpy.zeros((2,3)),
+		'delta':1.0/float(freq),
+		'nloop':nloop,
+		'motor_map':motor_map
+		} 
+		
 	lap=numpy.zeros(nloop)
 	print "stiff:", stiff, "[Nm/rad]"
 	print "start loop!"
@@ -464,8 +537,62 @@ def main(argv=None, freq=200, exptime=1, drivers=None, stiff=50., f_basic=False 
 		tmp_l[tmp_l < pmin]=pmin 
 		#drivers["mfb2"].realvalue['da'][7]= tmp_l[0] *P2V
 		#drivers["mfb2"].realvalue['da'][5]= tmp_l[1] *P2V
-		drivers["mfb0"].realvalue['da'][0]= -2.0
-		drivers["mfb1"].realvalue['da'][0]= 2.0
+		
+		## Set the motor torques using positional PID control. 
+		control_signal = numpy.zeros((2,3))
+		sidelist = ["angle0","angle1"]
+		for side in range(2):
+			for motor in range(3):
+				control_signal[side,motor], \
+				results["previous_error"][side,motor], \
+				results["total_error"][side,motor] = \
+					PID(results["reference"][loop_ct,side,motor], \
+						results[sidelist[side]][loop_ct,motor_map[side,motor]], \
+						results["total_error"][side,motor], \
+						results["previous_error"][side,motor], \
+						results["delta"])
+						
+		print "pid", results["reference"][loop_ct,side,motor], \
+						results["angle1"][loop_ct,motor_map[side,motor]], \
+						results["total_error"][side,motor], \
+						results["previous_error"][side,motor], \
+						results["delta"]
+		
+		## Control motors using PID control. 
+		#for motor in range(3);
+		#	drivers["mfb0"].realvalue['da'][motor_map[0,motor]]= \
+		#		control_signal[0,motor]
+		#	drivers["mfb1"].realvalue['da'][motor_map[1,motor]]= \
+		#		control_signal[1,motor]
+		
+		## TUNING. Specific to tuning the joints with the reference trajectory.
+		## Typically one joint at a time i.e. just manually put these in.
+		drivers["mfb0"].realvalue['da'][0] = control_signal[0,0]
+		#drivers["mfb0"].realvalue['da'][1] = control_signal[0,1]
+		#drivers["mfb0"].realvalue['da'][2] = control_signal[0,2]
+		#drivers["mfb1"].realvalue['da'][0] = control_signal[1,0]
+		#drivers["mfb1"].realvalue['da'][1] = control_signal[1,1]
+		#drivers["mfb1"].realvalue['da'][2] = control_signal[1,2]
+			
+			
+		## Truncate the signal if it becomes too large.
+		limit = 5.0
+		for motor in range(3):
+			if drivers["mfb0"].realvalue['da'][motor] > limit:
+				drivers["mfb0"].realvalue['da'][motor] = limit
+			elif drivers["mfb0"].realvalue['da'][motor] < -limit:
+				drivers["mfb0"].realvalue['da'][motor] = -limit
+			if drivers["mfb1"].realvalue['da'][motor] > limit:
+				drivers["mfb1"].realvalue['da'][motor] = limit
+			elif drivers["mfb1"].realvalue['da'][motor] < -limit:
+				drivers["mfb1"].realvalue['da'][motor] = -limit
+				
+		print "control signal right ankle", drivers["mfb0"].realvalue['da'][0]
+		print "control signal right knee", drivers["mfb0"].realvalue['da'][1]
+		print "control signal right hip", drivers["mfb0"].realvalue['da'][2]
+		print "control signal left ankle", drivers["mfb1"].realvalue['da'][0]
+		print "control signal left knee", drivers["mfb1"].realvalue['da'][1]
+		print "control signal left hip", drivers["mfb1"].realvalue['da'][2]
 
 		print "r:",tmp_r
 		print "l:",tmp_l
@@ -602,12 +729,50 @@ if __name__ == "__main__":
 	print "f_avrg=np.array([", np.array([rslts["fsr_r"][:,0:2].sum(axis=1).mean(),rslts["fsr_l"][:,0:2].sum(axis=1).mean()]), "])"
 	print "f_avrg=np.array([%f,%f,%f,%f" % tuple(np.array([rslts["fsr_r"][:,0].mean(), rslts["fsr_r"][:,1].mean(),rslts["fsr_l"][:,0].mean(),rslts["fsr_l"][:,1].mean()])), "])"
 
-	plt.figure()
+	#plt.figure()
 	#plt.plot(rslts['da1'][:,0], label="p1")
 	#plt.plot(rslts['da1'][:,1], label="p2")
 	#plt.legend(loc=0)
-	plt.plot(rslts['ad0'][:,4], label="ch1")
-        plt.plot(rslts['ad0'][:,5], label="ch2")
-        plt.legend(loc=0)
+	#plt.plot(rslts['ad0'][:,4], label="ch1")
+    #    plt.plot(rslts['ad0'][:,5], label="ch2")
+    #    plt.legend(loc=0)
+	
+	# Create figure and subplot for later use. 
+	#plt.xlabel('Frame number')
+	#plt.ylabel('Encoder value')
+	#plt.title('Measured vs reference trajectories.')
+	
+	# row and column sharing
+	f, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, sharex='col')
+	ax1.set_ylim([-0.6,0.4])
+	ax1.set_title('left heel')
+	ax2.set_ylim([-1.8,0.2])
+	ax2.set_title('left knee')
+	ax3.set_ylim([-1.28,1.28])
+	ax3.set_title('left hip')
+	ax4.set_ylim([-0.2,0.3])
+	ax4.set_title('right heel')
+	ax5.set_ylim([-0.2,2.0])
+	ax5.set_title('right knee')
+	ax6.set_ylim([-1.4,1.3])
+	ax6.set_title('right hip')
+	
+	ax1.plot(rslts["reference"][1:rslts["nloop"],1,0])
+	ax1.plot(rslts["angle1"][1:rslts["nloop"],rslts["motor_map"][1,0]])
+	ax2.plot(rslts["reference"][1:rslts["nloop"],1,1])
+	ax2.plot(rslts["angle1"][1:rslts["nloop"],rslts["motor_map"][1,1]])
+	ax3.plot(rslts["reference"][1:rslts["nloop"],1,2])
+	ax3.plot(rslts["angle1"][1:rslts["nloop"],rslts["motor_map"][1,2]])
+	ax4.plot(rslts["reference"][1:rslts["nloop"],0,0])
+	ax4.plot(rslts["angle0"][1:rslts["nloop"],rslts["motor_map"][0,0]])
+	ax5.plot(rslts["reference"][1:rslts["nloop"],0,1])
+	ax5.plot(rslts["angle0"][1:rslts["nloop"],rslts["motor_map"][0,1]])
+	ax6.plot(rslts["reference"][1:rslts["nloop"],0,2])
+	ax6.plot(rslts["angle0"][1:rslts["nloop"],rslts["motor_map"][0,2]])
+	plt.get_current_fig_manager().window.showMaximized()
+	#figManager = plt.get_current_fig_manager()
+	#figManager.window.showMaximized()
 	plt.show()
+	
+	
 	#sys.exit()
