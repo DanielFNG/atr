@@ -26,15 +26,13 @@ if isempty(which('startup.m'))
         flag = 0;
     end
     fprintf(fileID, '%s', ['setenv(''ATR_HOME'', ''' pwd ''');']);
-    fprintf(fileID, '%s', ['setenv(''ROBOT_ARM'', ''' [pwd filesep 'robot-arm'] ''');']);
-    fprintf(fileID, '%s', ['setenv(''XOR2'', ''' [pwd filesep 'xor2'] ''');']);
 else
     fileID = fopen(which('startup.m'), 'a');
     fprintf(fileID, '\n%s', ['setenv(''ATR_HOME'', ''' pwd ''');']);
-    fprintf(fileID, '%s', ['setenv(''ROBOT_ARM'', ''' [pwd filesep 'robot-arm'] ''');']);
-    fprintf(fileID, '%s', ['setenv(''XOR2'', ''' [pwd filesep 'xor2'] ''');']);
     flag = -1;
 end
+fprintf(fileID, '\n%s', ['setenv(''ROBOT_ARM'', ''' [pwd filesep 'robot-arm'] ''');']);
+fprintf(fileID, '\n%s', ['setenv(''XOR2'', ''' [pwd filesep 'xor2'] ''');']);
 fclose(fileID);
 
 % Set the environment variable for the current session (necessary so users
