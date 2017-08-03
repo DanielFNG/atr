@@ -183,6 +183,9 @@ def main(argv=None, freq=200, exptime=1, drivers=None, stiff=50., f_basic=False 
 	"""
 #def main(argv=None, freq=1000, exptime=2, drivers=None):
 
+	# Get quick and dirty access to socket. 
+	global s
+
 	#######Define interior functions for PID control###########
 	def calculateProportionalError(reference, measured):
 		return reference - measured
@@ -488,8 +491,8 @@ def main(argv=None, freq=200, exptime=1, drivers=None, stiff=50., f_basic=False 
 		results['ad2'][loop_ct,0:16] = drivers["mfb2"].realvalue['ad'][0:16]
 
 		#print results['ad2'][loop_ct,0:16]
-		print "angle0:",results['angle0'][loop_ct,0:4]
-		print "angle1:",results['angle1'][loop_ct,0:4]
+		#print "angle0:",results['angle0'][loop_ct,0:4]
+		#print "angle1:",results['angle1'][loop_ct,0:4]
 		#print "ad0", results['ad0'][loop_ct,0:8]
 		#print "ad1:", results['ad1'][loop_ct,0:8]
 		#print "ad2:",results['ad2'][loop_ct,:]
@@ -553,11 +556,11 @@ def main(argv=None, freq=200, exptime=1, drivers=None, stiff=50., f_basic=False 
 						results["previous_error"][side,motor], \
 						results["delta"])
 						
-		print "pid", results["reference"][loop_ct,side,motor], \
-						results["angle1"][loop_ct,motor_map[side,motor]], \
-						results["total_error"][side,motor], \
-						results["previous_error"][side,motor], \
-						results["delta"]
+		#print "pid", results["reference"][loop_ct,side,motor], \
+		#				results["angle1"][loop_ct,motor_map[side,motor]], \
+		#				results["total_error"][side,motor], \
+		#				results["previous_error"][side,motor], \
+		#				results["delta"]
 		
 		## Control motors using PID control to reference trajectory. 
 		#drivers["mfb0"].realvalue['da'][0] = control_signal[0,0]
@@ -580,19 +583,21 @@ def main(argv=None, freq=200, exptime=1, drivers=None, stiff=50., f_basic=False 
 			elif drivers["mfb1"].realvalue['da'][motor] < -limit:
 				drivers["mfb1"].realvalue['da'][motor] = -limit
 
-		print "control signal right ankle", drivers["mfb0"].realvalue['da'][0]
-		print "control signal right knee", drivers["mfb0"].realvalue['da'][1]
-		print "control signal right hip", drivers["mfb0"].realvalue['da'][2]
-		print "control signal left ankle", drivers["mfb1"].realvalue['da'][0]
-		print "control signal left knee", drivers["mfb1"].realvalue['da'][1]
-		print "control signal left hip", drivers["mfb1"].realvalue['da'][2]
+		#print "control signal right ankle", drivers["mfb0"].realvalue['da'][0]
+		#print "control signal right knee", drivers["mfb0"].realvalue['da'][1]
+		#print "control signal right hip", drivers["mfb0"].realvalue['da'][2]
+		#print "control signal left ankle", drivers["mfb1"].realvalue['da'][0]
+		#print "control signal left knee", drivers["mfb1"].realvalue['da'][1]
+		#print "control signal left hip", drivers["mfb1"].realvalue['da'][2]
 
-		print "r:",tmp_r
-		print "l:",tmp_l
+		# Send data to real time graphs.
+		
+		#send_data["time"] = results['time'][loop_ct,0]-results["time"][0,0]
+		#send_data["data1"] = (drivers["mfb1"].realvalue['da'][0])
+		
+		#print "r:",tmp_r
+		#print "l:",tmp_l
 
-		if loop_ct % freq == 0:
-			print "."
-		# output 
  		drivers["multictrl"].put_prepare()
 		drivers["multictrl"].put()
  		drivers["multictrl"].put_post()
@@ -602,15 +607,29 @@ def main(argv=None, freq=200, exptime=1, drivers=None, stiff=50., f_basic=False 
 			if f_send==1:
 				f_heel=0
 			#print "aft:",f_heel
+			
+		# Send current time to Matlab PC.
+		
+		string_time = "%.3f" % now
+		rknee_angle_time = "%.5f" % results["angle0"][loop_ct,4]
+			
+		temp = string_time + rknee_angle_time
+		if loop_ct % 5 == 0:
+			s.send(temp[0:12])
+	
+		#if loop_ct == 0:
+		#	s.send('0.000' + temp[3:10])
+		#elif loop_ct % 5 == 0:
+		#	s.send(temp[0:12])		
 
 		if f_mode==0:
 			
 			#senddata = {"time": now, "data1":np.rad2deg(results['angle'][loop_ct,0])+20.,"data2":results['da0'][loop_ct,0],"data3":results['da0'][loop_ct,1],"data4":fsr_force[0],"data5":results['ad0'][loop_ct,8],"data6":results['ad1'][loop_ct,9],"data7":fsr_force[1],"data8":fsr_force[2],"data9":fsr_force[3], "sound":f_sound, "data11":f_cycle}
-			senddata = {"time": now, "data1":phase,"data2":results['da2'][loop_ct,2],"data3":results['da2'][loop_ct,3],"data4":results["fsr_r"][loop_ct,0],"data5":results['da2'][loop_ct,5],"data6":results['da2'][loop_ct,7],"data7":results["fsr_r"][loop_ct,1],"data8":results["fsr_l"][loop_ct,0],"data9":results["fsr_l"][loop_ct,1], "sound":f_sound, "data11":f_heel, "data12":1}
+			senddata = {"time": now, "data1":0,"data2":results["angle1"][loop_ct,0],"data3":results['da2'][loop_ct,3],"data4":results["fsr_r"][loop_ct,0],"data5":results['da2'][loop_ct,5],"data6":results['da2'][loop_ct,7],"data7":results["fsr_r"][loop_ct,1],"data8":results["fsr_l"][loop_ct,0],"data9":results["fsr_l"][loop_ct,1], "sound":f_sound, "data11":f_heel, "data12":1}
 			#print "%3.3f, %3.3f "% tuple(results['ad0'][loop_ct,8:10])
 		else:
 			#senddata = {"time": now, "data1":np.rad2deg(results['angle'][loop_ct,0])+20.,"data2":results['da1'][loop_ct,0],"data3":results['da1'][loop_ct,1],"data4":fsr_force[0],"data5":results['ad1'][loop_ct,8],"data6":results['ad1'][loop_ct,9],"data7":fsr_force[1],"data8":fsr_force[2],"data9":fsr_force[3], "sound":f_sound, "data11":f_cycle}
-			senddata = {"time": now, "data1":phase,"data2":results['da1'][loop_ct,0],"data3":results['da1'][loop_ct,1],"data4":results["fsr_r"][loop_ct,0],"data5":results['ad1'][loop_ct,8],"data6":results['ad1'][loop_ct,9],"data7":results["fsr_r"][loop_ct,1],"data8":results["fsr_l"][loop_ct,0],"data9":results["fsr_l"][loop_ct,1], "sound":f_sound, "data11":f_heel, "data12":1}
+			senddata = {"time": now, "data1":results["angle1"][loop_ct,0],"data2":results['da1'][loop_ct,0],"data3":results['da1'][loop_ct,1],"data4":results["angle1"][loop_ct,0],"data5":results['ad1'][loop_ct,8],"data6":results['ad1'][loop_ct,9],"data7":results["fsr_r"][loop_ct,1],"data8":results["fsr_l"][loop_ct,0],"data9":results["fsr_l"][loop_ct,1], "sound":f_sound, "data11":f_heel, "data12":1}
 
 		#senddata = {"time": now, "data1":1}
 		json.dumps(senddata)
@@ -618,7 +637,7 @@ def main(argv=None, freq=200, exptime=1, drivers=None, stiff=50., f_basic=False 
 			pass
 		else:
 			if loop_ct%5==0:
-				print "send"
+				#print "send"
 				drivers["s_snd"].sendto(json.dumps(senddata), server_info) 
 				if f_send==0:
 					f_send=1				
@@ -645,6 +664,13 @@ def main(argv=None, freq=200, exptime=1, drivers=None, stiff=50., f_basic=False 
 	return results, drivers, samplingtime, sldparam
 
 if __name__ == "__main__":
+
+	# Try connecting to Matlab on my Windows PC. 
+	serverIp = '133.186.111.28'
+	tcpPort = 10003
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((serverIp, tcpPort))
+	time.sleep(1)
 
 	argv = sys.argv
 	f_basic =True
@@ -767,5 +793,7 @@ if __name__ == "__main__":
 	#figManager.window.showMaximized()
 	plt.show()
 	
+	# End connection to Windows PC. 
+	s.close()
 	
 	#sys.exit()
