@@ -562,13 +562,22 @@ def main(argv=None, freq=200, exptime=1, drivers=None, stiff=50., f_basic=False 
 		#				results["previous_error"][side,motor], \
 		#				results["delta"]
 		
-		## Control motors using PID control to reference trajectory. 
-		#drivers["mfb0"].realvalue['da'][0] = control_signal[0,0]
-		#drivers["mfb0"].realvalue['da'][1] = control_signal[0,1]
-		#drivers["mfb0"].realvalue['da'][2] = control_signal[0,2]
-		drivers["mfb1"].realvalue['da'][0] = control_signal[1,0]
-		drivers["mfb1"].realvalue['da'][1] = control_signal[1,1]
-		drivers["mfb1"].realvalue['da'][2] = control_signal[1,2]
+		if loop_ct > 2000:
+			# Wait for 10 secs to let human match correct walking speed. 
+			drivers["mfb0"].realvalue['da'][0] = 0
+			drivers["mfb0"].realvalue['da'][1] = 0
+			drivers["mfb0"].realvalue['da'][2] = 0
+			drivers["mfb1"].realvalue['da'][0] = 0
+			drivers["mfb1"].realvalue['da'][1] = 0
+			drivers["mfb1"].realvalue['da'][2] = 0
+		else:
+			## Control motors using PID control to reference trajectory. 
+			drivers["mfb0"].realvalue['da'][0] = control_signal[0,0]
+			drivers["mfb0"].realvalue['da'][1] = control_signal[0,1]
+			drivers["mfb0"].realvalue['da'][2] = control_signal[0,2]
+			drivers["mfb1"].realvalue['da'][0] = control_signal[1,0]
+			drivers["mfb1"].realvalue['da'][1] = control_signal[1,1]
+			drivers["mfb1"].realvalue['da'][2] = control_signal[1,2]
 			
 			
 		## Truncate the signal if it becomes too large.
