@@ -71,11 +71,11 @@ def plot_gp_blind(bo, x):
     acq.legend(loc=2, bbox_to_anchor=(1.01, 1), borderaxespad=0.)
 
 
-def prompt_function(values):
+def prompt_function(**kwargs):
     """
     Method to prompt user for measurement of the objective function given values for the dependant variables.
 
-    :param values:
+    :param kwargs:
         The 'next guesses' for the link attachment positions which maximise the objective function, given as a
         dictionary of (coordinate, value) pairs.
 
@@ -83,9 +83,8 @@ def prompt_function(values):
         The value of the objective function - handled separately - which is input by the user. For example, mean or
         total EMG.
     """
-    print(values.keys())
-    for coordinate in values.keys():
-        print("Set the ", coordinate, " attachment position to: ", values[coordinate], sep="")
+    for key, value in kwargs.items():
+        print("Set the ", key, " attachment position to: ", value, sep="")
     return input("Please input the resultant measured value: ")
 
 
@@ -115,18 +114,19 @@ def main(inputs, measurements, iterations=10, trade_off=5, acquisition='ucb', pl
     # Initialise the optimisation with the two known values of the objective function.
     bo.initialize(measurements)
 
+    # Create array of 10,000 x values linearly spaced in the range of the dependent variable.
+    x = np.linspace(inputs.values()[0][0], inputs.values()[0][1], 10000).reshape(-1, 1)
+
     # Perform Bayesian optimisation with the given iterations, acquisition function and trade off between exploitation
     # and exploration.
     if plots:
-        # Create array of 10,000 x values linearly spaced in the range of the dependent variable.
-        x = np.linspace(inputs.values()[0][0], inputs.values()[0][1], 10000).reshape(-1, 1)
         for i in range(iterations):
             bo.maximize(init_points=0, n_iter=1, acq=acquisition, kappa=trade_off)
             plot_gp_blind(bo, x)
     else:
         bo.maximize(init_points=0, n_iter=iterations, acq=acquisition, kappa=trade_off)
 
-    return bo
+    return bo, x
 
 
 # Execution script.
@@ -139,7 +139,18 @@ if __name__ == "__main__":
 
     # Two known measurements of the objective function, formatted as shown. Any two measurements will do, but it seemed
     # natural to choose the end points. The 'target' is a keyword and should not be changed.
-    measured_points = {'target': [0, 0], 'thigh': [0, 0.13]}
+    measured_points = {'target': [1, 1], 'thigh': [0, 0.13]}
 
     # Begin Bayesian Optimisation process.
-    bo_result = main(variables, measured_points)
+    #bo_result = main(variables, measured_points, iterations=5) # Not much exploration here.
+    bo_result, domain = main(variables, measured_points, iterations=10, trade_off=7, plots=False)
+    # With trade_off=7 we have more exploration than exploitation.
+
+    # Notes: the 'plots' keyword was intended to switch on/off plotting after each step. However, doing this gets weird
+    # results where after the first step the prediction stops being updated, and the 'best guesses' hardly vary at all
+    # from one stage to the next. I've not figured out why this is yet, but instead I'm going to keep plots=False.
+    # I can still easily get a graph at the end, and as long as I keep the returned bo_result I can later modify the
+    # plot_gp_blind function to allow plotting at multiple stages during the process.
+
+    # Plot the final result.
+    plot_gp_blind(bo_result, domain)

@@ -120,17 +120,20 @@ def generatedrivers(freq):
 		#drvmfb1 = pydrvmfb_basic(host="192.168.201.2", port=10008, testflag=False, RTNET=True, TIMEOUT = timeout)
 		drvmfb1 = pydrvmfb(host="192.168.203.2", port=10010, testflag=False, RTNET=True, TIMEOUT = timeout)
 		drvmfb2 = pydrvmfb(host="192.168.202.2", port=10009, testflag=False, RTNET=True, TIMEOUT = timeout)
+		drvmfb3 = pydrvmfb(host="192.168.200.2", port=10007, testflag=False, RTNET=True, TIMEOUT = timeout)
 		#drvmfb2 = pydrvmfb(host="192.168.202.2", port=10009, testflag=True, RTNET=True, TIMEOUT = timeout)
 
 		drivers["rtmodule"] = rtmodule
 		drivers["mfb0"] = drvmfb0
 		drivers["mfb1"] = drvmfb1
-	        drivers["mfb2"] = drvmfb2
-	        #drivers["ctrl"] = mfbctrl = pymfbctrl(drvmfb1, drvmfb2)
+		drivers["mfb2"] = drvmfb2
+		drivers["mfb3"] = drvmfb3					  
+	    #drivers["ctrl"] = mfbctrl = pymfbctrl(drvmfb1, drvmfb2)
 		drivers["multictrl"] = mfbmultictrl = pymfbmultictrl()
 		drivers["multictrl"].add_mfb(drvmfb0)
 		drivers["multictrl"].add_mfb(drvmfb1)
-	        drivers["multictrl"].add_mfb(drvmfb2)
+		drivers["multictrl"].add_mfb(drvmfb2)
+		drivers["multictrl"].add_mfb(drvmfb3)								  
 
 		# udp driver 
 		host = ''
@@ -301,6 +304,7 @@ def main(argv=None, freq=200, exptime=1, drivers=None, stiff=50., f_basic=False 
 		"ad0":numpy.zeros((nloop, 16)),
 		"ad1":numpy.zeros((nloop, 16)),
 		"ad2":numpy.zeros((nloop, 16)),
+		"ad3":numpy.zeros((nloop, 16)),						 
 		"da0":numpy.zeros((nloop, 8)),
 		"da1":numpy.zeros((nloop, 8)),
 		"da2":numpy.zeros((nloop, 8)),
@@ -345,6 +349,7 @@ def main(argv=None, freq=200, exptime=1, drivers=None, stiff=50., f_basic=False 
 		pass
         parampath = 'poly31_param.mat'
         param = scipy.io.loadmat(parampath)
+	
 	p1param = param['p1']
 	p2param = param['p2']
 	#ENC2RAD = 2. * np.pi/ 16000.
@@ -490,6 +495,7 @@ def main(argv=None, freq=200, exptime=1, drivers=None, stiff=50., f_basic=False 
 
 		results['ad2'][loop_ct,0:16] = drivers["mfb2"].realvalue['ad'][0:16]
 
+		results['ad3'][loop_ct,0:16] = drivers["mfb3"].realvalue['ad'][0:16]													  
 		#print results['ad2'][loop_ct,0:16]
 		#print "angle0:",results['angle0'][loop_ct,0:4]
 		#print "angle1:",results['angle1'][loop_ct,0:4]
@@ -562,7 +568,7 @@ def main(argv=None, freq=200, exptime=1, drivers=None, stiff=50., f_basic=False 
 		#				results["previous_error"][side,motor], \
 		#				results["delta"]
 		
-		if loop_ct > 2000:
+		if loop_ct < 2000:
 			# Wait for 10 secs to let human match correct walking speed. 
 			drivers["mfb0"].realvalue['da'][0] = 0
 			drivers["mfb0"].realvalue['da'][1] = 0
@@ -738,13 +744,14 @@ if __name__ == "__main__":
 		print >> sys.stderr, "\t for help use --help"
 		sys.exit(2)
 	wgain = 5.0
+	
 	if addr_server is None: 
 		print "noserver"
 		rslts, drivers, st, sldparam = main(f_basic=f_basic, exptime=exptime, omega_walk=omega_walk, sound_t=sound_t, wgain=wgain, randth=randth)
 	else:
 		print "server"
 		rslts, drivers, st, sldparam = main(f_basic=f_basic, exptime=exptime, server_info=(addr_server,port_server), omega_walk=omega_walk, sound_t=sound_t, wgain=wgain, randth=randth, f_init_param=f_init_param, heel_th=heel_th)
-
+		
 	savepath = "data/%s"%filename
 	print "saving results as ", savepath
 	print "saving ..."
