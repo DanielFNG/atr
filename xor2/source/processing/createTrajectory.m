@@ -1,4 +1,4 @@
-function trajectory = createTrajectory( average_slices, cycles )
+function trajectory = createTrajectory(average_slices, cycles)
 % Given gait cycle slices, repeat these a given number of times to obtain a
 % trajectory i.e. a repition of these average movements.
 

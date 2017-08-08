@@ -568,8 +568,8 @@ def main(argv=None, freq=200, exptime=1, drivers=None, stiff=50., f_basic=False 
 		#				results["previous_error"][side,motor], \
 		#				results["delta"]
 		
-		if loop_ct < 2000:
-			# Wait for 10 secs to let human match correct walking speed. 
+		if loop_ct < 6000:
+			# 30 secs of unassisted walking. 
 			drivers["mfb0"].realvalue['da'][0] = 0
 			drivers["mfb0"].realvalue['da'][1] = 0
 			drivers["mfb0"].realvalue['da'][2] = 0
@@ -577,7 +577,7 @@ def main(argv=None, freq=200, exptime=1, drivers=None, stiff=50., f_basic=False 
 			drivers["mfb1"].realvalue['da'][1] = 0
 			drivers["mfb1"].realvalue['da'][2] = 0
 		else:
-			## Control motors using PID control to reference trajectory. 
+			# Assisted walking - control motors using PID control. 
 			drivers["mfb0"].realvalue['da'][0] = control_signal[0,0]
 			drivers["mfb0"].realvalue['da'][1] = control_signal[0,1]
 			drivers["mfb0"].realvalue['da'][2] = control_signal[0,2]

@@ -62,6 +62,7 @@ end
 
 % Average over the slices for each co-ordinate. 
 averaged_slices = zeros(length,2,3);
+half_length = round(length/2,0);
 for i=1:3
     for j=1:length
         total = zeros(2,1);
@@ -70,7 +71,13 @@ for i=1:3
             total(2,1) = total(2,1) + slices{k,2,i}(j);
         end
         averaged_slices(j,1,i) = total(1,1)/n_cycles;
-        averaged_slices(j,2,i) = total(2,1)/n_cycles;
+        % Adjust the left averaged slices to account for the phase
+        % difference between the left and right leg. 
+        if j + half_length <= length
+            averaged_slices(j+half_length,2,i) = total(2,1)/n_cycles;
+        else
+            averaged_slices(j-half_length,2,i) = total(2,1)/n_cycles;
+        end
     end
 end
 
