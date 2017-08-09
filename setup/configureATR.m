@@ -47,6 +47,7 @@ addpath(genpath([getenv('ROBOT_ARM') filesep 'source']));
 addpath(genpath([getenv('ROBOT_ARM') filesep 'offline' filesep 'source']));
 addpath(genpath([getenv('ROBOT_ARM') filesep 'online' filesep 'source']));
 addpath(genpath([getenv('XOR2') filesep 'source']));
+addpath(genpath([getenv('ATR_HOME') filesep 'common']));
 if flag == 1  
     addpath(genpath([getenv('ATR_HOME') filesep 'setup' filesep 'startup']));
 elseif flag == 0
