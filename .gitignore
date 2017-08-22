@@ -60,3 +60,6 @@ Temporary Items
 # Ignore generated figures.
 *.fig
 *.png
+
+# Ignore workspace file. 
+*workspace.xml
