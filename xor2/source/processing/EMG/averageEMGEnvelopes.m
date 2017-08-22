@@ -3,7 +3,7 @@
 % denoting the start/end of each wave. 
 function average_waveform = averageEMGEnvelopes(processed_emg, peaks)
 
-n_waves = size(peaks,1) - 1;
+n_waves = size(peaks,2) - 1;
 waveforms{1,n_waves} = {};
 
 sizes = zeros(1,n_waves);

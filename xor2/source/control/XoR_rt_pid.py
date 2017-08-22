@@ -215,7 +215,8 @@ def main(argv=None, freq=200, exptime=1, drivers=None, stiff=50., f_basic=False 
 		
 		## These work well for right heel. 
 		K_p = 4.0
-		K_i = 0.1
+		K_i = 0.0
+		#K_i = 0.1
 		K_d = 0.3
 
 		# Calculate error terms
@@ -562,6 +563,22 @@ def main(argv=None, freq=200, exptime=1, drivers=None, stiff=50., f_basic=False 
 						results["previous_error"][side,motor], \
 						results["delta"])
 						
+		#print "control output side left heel", control_signal[1,0]
+		#print "control output side left knee", control_signal[1,1]
+		#print "control output side left hip", control_signal[1,2]
+		#print "control output side right heel", control_signal[0,0]
+		#print "control output side right knee", control_signal[0,1]
+		#print "control output side right hip", control_signal[0,2]
+		
+		#print results["ad3"][loop_ct,8]
+		
+		if loop_ct == 0:
+			sys.stdout.write("running")
+			sys.stdout.flush()
+		elif loop_ct % 100 == 0:
+			sys.stdout.write('.')
+			sys.stdout.flush()
+		
 		#print "pid", results["reference"][loop_ct,side,motor], \
 		#				results["angle1"][loop_ct,motor_map[side,motor]], \
 		#				results["total_error"][side,motor], \
@@ -777,37 +794,35 @@ if __name__ == "__main__":
 	#plt.ylabel('Encoder value')
 	#plt.title('Measured vs reference trajectories.')
 	
-	# row and column sharing
-	# f, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, sharex='col')
-	# ax1.set_ylim([-0.6,0.4])
-	# ax1.set_title('left heel')
-	# ax2.set_ylim([-1.8,0.2])
-	# ax2.set_title('left knee')
-	# ax3.set_ylim([-1.28,1.28])
-	# ax3.set_title('left hip')
-	# ax4.set_ylim([-0.2,0.3])
-	# ax4.set_title('right heel')
-	# ax5.set_ylim([-0.2,2.0])
-	# ax5.set_title('right knee')
-	# ax6.set_ylim([-1.4,1.3])
-	# ax6.set_title('right hip')
+	## Plot encoder positions vs ref traj using row and column sharing
+	## Commented out for now due to finished testing! But kept incase needed. 
+	#f, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, sharex='col')
+	#ax1.set_ylim([-0.6,0.4])
+	#ax1.set_title('left heel')
+	#ax2.set_ylim([-1.8,0.2])
+	#ax2.set_title('left knee')
+	#ax3.set_ylim([-1.28,1.28])
+	#ax3.set_title('left hip')
+	#ax4.set_ylim([-0.2,0.3])
+	#ax4.set_title('right heel')
+	#ax5.set_ylim([-0.2,2.0])
+	#ax5.set_title('right knee')
+	#ax6.set_ylim([-1.4,1.3])
+	#ax6.set_title('right hip')
 	
-	# ax1.plot(rslts["reference"][1:rslts["nloop"],1,0])
-	# ax1.plot(rslts["angle1"][1:rslts["nloop"],rslts["motor_map"][1,0]])
-	# ax2.plot(rslts["reference"][1:rslts["nloop"],1,1])
-	# ax2.plot(rslts["angle1"][1:rslts["nloop"],rslts["motor_map"][1,1]])
-	# ax3.plot(rslts["reference"][1:rslts["nloop"],1,2])
-	# ax3.plot(rslts["angle1"][1:rslts["nloop"],rslts["motor_map"][1,2]])
-	# ax4.plot(rslts["reference"][1:rslts["nloop"],0,0])
-	# ax4.plot(rslts["angle0"][1:rslts["nloop"],rslts["motor_map"][0,0]])
-	# ax5.plot(rslts["reference"][1:rslts["nloop"],0,1])
-	# ax5.plot(rslts["angle0"][1:rslts["nloop"],rslts["motor_map"][0,1]])
-	# ax6.plot(rslts["reference"][1:rslts["nloop"],0,2])
-	# ax6.plot(rslts["angle0"][1:rslts["nloop"],rslts["motor_map"][0,2]])
-	# plt.get_current_fig_manager().window.showMaximized()
-	#figManager = plt.get_current_fig_manager()
-	#figManager.window.showMaximized()
-	# plt.show()
+	#ax1.plot(rslts["reference"][1:rslts["nloop"],1,0])
+	#ax1.plot(rslts["angle1"][1:rslts["nloop"],rslts["motor_map"][1,0]])
+	#ax2.plot(rslts["reference"][1:rslts["nloop"],1,1])
+	#ax2.plot(rslts["angle1"][1:rslts["nloop"],rslts["motor_map"][1,1]])
+	#ax3.plot(rslts["reference"][1:rslts["nloop"],1,2])
+	#ax3.plot(rslts["angle1"][1:rslts["nloop"],rslts["motor_map"][1,2]])
+	#ax4.plot(rslts["reference"][1:rslts["nloop"],0,0])
+	#ax4.plot(rslts["angle0"][1:rslts["nloop"],rslts["motor_map"][0,0]])
+	#ax5.plot(rslts["reference"][1:rslts["nloop"],0,1])
+	#ax5.plot(rslts["angle0"][1:rslts["nloop"],rslts["motor_map"][0,1]])
+	#ax6.plot(rslts["reference"][1:rslts["nloop"],0,2])
+	#ax6.plot(rslts["angle0"][1:rslts["nloop"],rslts["motor_map"][0,2]])
+	#plt.get_current_fig_manager().window.showMaximized()
 	
 	# End connection to Windows PC. 
 	s.close()

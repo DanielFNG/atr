@@ -1,9 +1,9 @@
 function analyseExperimentResults(save_name)
 % Calculate the objective function (defined herein) for data saved in
-% save_name.mat, located in the data folder. 
+% [save_name '.mat'], located in the data folder. 
 
 % EMG channels.
-channels = [1,2,3];
+channels = [1];%,2,3,4];
 
 % Indices for the assistance stage of the experiment, post-training.
 lrange = 8000; 
@@ -18,22 +18,30 @@ raw_peaks = [8184,8630,9076,9522,9968,10414,10860,11306,11752];
 peaks = raw_peaks - (lrange - 1);
 
 % Get data path and open file. 
-data_folder = [getenv('XOR2') filesep data filesep];
+data_folder = [getenv('XOR2') filesep 'data' filesep];
 load([data_folder save_name '.mat']);
 
 % Evaluate (qualitatively and quantitatively) the EMG results. Note that we 
 % assume the EMG data is stored in a matrix with size (timesteps, channels) 
 % called ad3. 
-averaged_waveforms = evaluateEMGResults(ad3,channels,lrange,urange,peaks); 
+
+%processed_emg = evaluateEMGResults(ad3,peaks,channels,lrange,urange);
+
+% Below: deprecated, computes average waveforms instead - but this isn't
+% working well.
+[~, averaged_waveforms] = ...
+    evaluateEMGResults(ad3,peaks,channels,lrange,urange); 
 
 % Calculate the result of the objective function. 
 result = objectiveFunction(averaged_waveforms);
 
 % Output the result to the screen so the experiment can continue.
-fprintf('The objective function result was %f.', result);
+fprintf('The objective function result was %f.\n', result);
 
-% Save the result for posterity in [save_name '_result.mat'].
-save([data_folder save_name '_result.mat'], 'result');
+% Save the result for posterity in [save_name '_result.mat'], along with the 
+% processed_emg and averaged_waveforms for this case.
+% save([data_folder save_name '_result.mat'], 'result', 'processed_emg', 'averaged_waveforms');
+save([data_folder save_name '_result.mat'], 'result', 'processed_emg');
 
 end
 

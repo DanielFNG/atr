@@ -1,5 +1,8 @@
-function averaged_waveforms = ...
+function [processed_emg, averaged_waveforms] = ...
     evaluateEMGResults(data, peaks, channels, lrange, urange)
+
+%function processed_emg = ...
+%    evaluateEMGResults(data, peaks, channels, lrange, urange)
 % Qualitatively and quantitatively analyse EMG data. 
 
 %% Parse inputs.
@@ -22,15 +25,19 @@ end
 
 % First it must pass a simple visual test to make sure nothing's gone wrong
 % with the EMG! So we plot the raw EMG results for the region of interest. 
-figure
+test = figure('Name', 'Raw EMG Data');
+movegui(test, 'east');
+ax{n_channels} = {};
 for i=1:n_channels
-    ax = subplot(n_channels,1,i);
-    plot(ax,data(lrange:urange,channels(1,i)));
+    ax{i} = subplot(n_channels,1,i);
+    plot(ax{i},data(lrange:urange,channels(1,i)));
 end
 
 % Ask user whether or not the EMG looks good enough to continue. 
-x = input(['If everything looks fine input ''y'' to continue. Otherwise, ' ...
-    'input ''n''.']);
+commandwindow;
+x = input(['If everything looks fine input ''y'' to continue.\nOtherwise, ' ...
+    'input ''n''.\n'], 's');
+%close(test);
 if strcmp(x,'y')
     display('Passed visual test. Moving on...');
 else
@@ -40,16 +47,35 @@ end
 
 %% Quantitative EMG analysis.
 
-% Create cell arrays to hold the averaged waveform for each channel. 
+% Create cell arrays to hold the averaged waveform for each channel and the 
+% filtered emg data also. 
 averaged_waveforms{1,n_channels} = {};
+processed_emg{1,n_channels} = {};
 for i=1:n_channels
     % Process the raw EMG. Defaults of [200,6,80] are assumed in filterRawEMG,
     % but these can alternatively be supplied as optional arguments.
-    processed_emg = filterRawEMG(data(lrange:urange,channels(1,i)));
+    processed_emg{1,i} = filterRawEMG(data(lrange:urange,channels(1,i)));
     %processed_emg{1,i} = filterRawEMG(data(lrange:urange,i), freq, low, high);
     
     % Average the processed EMG in to one waveform per channel.
-    averaged_waveforms{1,i} = averageEMGEnvelopes(processed_emg, peaks);
+    averaged_waveforms{1,i} = averageEMGEnvelopes(processed_emg{1,i}, peaks);
+end
+
+%% More EMG visual inspection to ensure the processing and averaging has worked.
+% 
+for i=1:n_channels
+    subplot(ax{i});
+    hold on;
+    plot(ax{i},processed_emg{1,i});
+end
+% Ask user whether or not the EMG looks good enough to continue. 
+x = input(['If everything looks fine input ''y'' to continue. Otherwise, ' ...
+    'input ''n''.\n'], 's');
+if strcmp(x,'y')
+    display('Passed visual test. Moving on...');
+else
+    display('Failed visual test. Exiting objective function calculation.');
+    return
 end
 
 end
