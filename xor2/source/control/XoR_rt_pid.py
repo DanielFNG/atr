@@ -120,17 +120,20 @@ def generatedrivers(freq):
 		#drvmfb1 = pydrvmfb_basic(host="192.168.201.2", port=10008, testflag=False, RTNET=True, TIMEOUT = timeout)
 		drvmfb1 = pydrvmfb(host="192.168.203.2", port=10010, testflag=False, RTNET=True, TIMEOUT = timeout)
 		drvmfb2 = pydrvmfb(host="192.168.202.2", port=10009, testflag=False, RTNET=True, TIMEOUT = timeout)
+		drvmfb3 = pydrvmfb(host="192.168.200.2", port=10007, testflag=False, RTNET=True, TIMEOUT = timeout)
 		#drvmfb2 = pydrvmfb(host="192.168.202.2", port=10009, testflag=True, RTNET=True, TIMEOUT = timeout)
 
 		drivers["rtmodule"] = rtmodule
 		drivers["mfb0"] = drvmfb0
 		drivers["mfb1"] = drvmfb1
-	        drivers["mfb2"] = drvmfb2
-	        #drivers["ctrl"] = mfbctrl = pymfbctrl(drvmfb1, drvmfb2)
+		drivers["mfb2"] = drvmfb2
+		drivers["mfb3"] = drvmfb3					  
+	    #drivers["ctrl"] = mfbctrl = pymfbctrl(drvmfb1, drvmfb2)
 		drivers["multictrl"] = mfbmultictrl = pymfbmultictrl()
 		drivers["multictrl"].add_mfb(drvmfb0)
 		drivers["multictrl"].add_mfb(drvmfb1)
-	        drivers["multictrl"].add_mfb(drvmfb2)
+		drivers["multictrl"].add_mfb(drvmfb2)
+		drivers["multictrl"].add_mfb(drvmfb3)								  
 
 		# udp driver 
 		host = ''
@@ -212,7 +215,8 @@ def main(argv=None, freq=200, exptime=1, drivers=None, stiff=50., f_basic=False 
 		
 		## These work well for right heel. 
 		K_p = 4.0
-		K_i = 0.1
+		K_i = 0.0
+		#K_i = 0.1
 		K_d = 0.3
 
 		# Calculate error terms
@@ -301,6 +305,7 @@ def main(argv=None, freq=200, exptime=1, drivers=None, stiff=50., f_basic=False 
 		"ad0":numpy.zeros((nloop, 16)),
 		"ad1":numpy.zeros((nloop, 16)),
 		"ad2":numpy.zeros((nloop, 16)),
+		"ad3":numpy.zeros((nloop, 16)),						 
 		"da0":numpy.zeros((nloop, 8)),
 		"da1":numpy.zeros((nloop, 8)),
 		"da2":numpy.zeros((nloop, 8)),
@@ -345,6 +350,7 @@ def main(argv=None, freq=200, exptime=1, drivers=None, stiff=50., f_basic=False 
 		pass
         parampath = 'poly31_param.mat'
         param = scipy.io.loadmat(parampath)
+	
 	p1param = param['p1']
 	p2param = param['p2']
 	#ENC2RAD = 2. * np.pi/ 16000.
@@ -490,6 +496,7 @@ def main(argv=None, freq=200, exptime=1, drivers=None, stiff=50., f_basic=False 
 
 		results['ad2'][loop_ct,0:16] = drivers["mfb2"].realvalue['ad'][0:16]
 
+		results['ad3'][loop_ct,0:16] = drivers["mfb3"].realvalue['ad'][0:16]													  
 		#print results['ad2'][loop_ct,0:16]
 		#print "angle0:",results['angle0'][loop_ct,0:4]
 		#print "angle1:",results['angle1'][loop_ct,0:4]
@@ -556,19 +563,44 @@ def main(argv=None, freq=200, exptime=1, drivers=None, stiff=50., f_basic=False 
 						results["previous_error"][side,motor], \
 						results["delta"])
 						
+		#print "control output side left heel", control_signal[1,0]
+		#print "control output side left knee", control_signal[1,1]
+		#print "control output side left hip", control_signal[1,2]
+		#print "control output side right heel", control_signal[0,0]
+		#print "control output side right knee", control_signal[0,1]
+		#print "control output side right hip", control_signal[0,2]
+		
+		#print results["ad3"][loop_ct,8]
+		
+		if loop_ct == 0:
+			sys.stdout.write("running")
+			sys.stdout.flush()
+		elif loop_ct % 100 == 0:
+			sys.stdout.write('.')
+			sys.stdout.flush()
+		
 		#print "pid", results["reference"][loop_ct,side,motor], \
 		#				results["angle1"][loop_ct,motor_map[side,motor]], \
 		#				results["total_error"][side,motor], \
 		#				results["previous_error"][side,motor], \
 		#				results["delta"]
 		
-		## Control motors using PID control to reference trajectory. 
-		#drivers["mfb0"].realvalue['da'][0] = control_signal[0,0]
-		#drivers["mfb0"].realvalue['da'][1] = control_signal[0,1]
-		#drivers["mfb0"].realvalue['da'][2] = control_signal[0,2]
-		drivers["mfb1"].realvalue['da'][0] = control_signal[1,0]
-		drivers["mfb1"].realvalue['da'][1] = control_signal[1,1]
-		drivers["mfb1"].realvalue['da'][2] = control_signal[1,2]
+		if loop_ct < 6000:
+			# 30 secs of unassisted walking. 
+			drivers["mfb0"].realvalue['da'][0] = 0
+			drivers["mfb0"].realvalue['da'][1] = 0
+			drivers["mfb0"].realvalue['da'][2] = 0
+			drivers["mfb1"].realvalue['da'][0] = 0
+			drivers["mfb1"].realvalue['da'][1] = 0
+			drivers["mfb1"].realvalue['da'][2] = 0
+		else:
+			# Assisted walking - control motors using PID control. 
+			drivers["mfb0"].realvalue['da'][0] = control_signal[0,0]
+			drivers["mfb0"].realvalue['da'][1] = control_signal[0,1]
+			drivers["mfb0"].realvalue['da'][2] = control_signal[0,2]
+			drivers["mfb1"].realvalue['da'][0] = control_signal[1,0]
+			drivers["mfb1"].realvalue['da'][1] = control_signal[1,1]
+			drivers["mfb1"].realvalue['da'][2] = control_signal[1,2]
 			
 			
 		## Truncate the signal if it becomes too large.
@@ -729,13 +761,14 @@ if __name__ == "__main__":
 		print >> sys.stderr, "\t for help use --help"
 		sys.exit(2)
 	wgain = 5.0
+	
 	if addr_server is None: 
 		print "noserver"
 		rslts, drivers, st, sldparam = main(f_basic=f_basic, exptime=exptime, omega_walk=omega_walk, sound_t=sound_t, wgain=wgain, randth=randth)
 	else:
 		print "server"
 		rslts, drivers, st, sldparam = main(f_basic=f_basic, exptime=exptime, server_info=(addr_server,port_server), omega_walk=omega_walk, sound_t=sound_t, wgain=wgain, randth=randth, f_init_param=f_init_param, heel_th=heel_th)
-
+		
 	savepath = "data/%s"%filename
 	print "saving results as ", savepath
 	print "saving ..."
@@ -761,37 +794,35 @@ if __name__ == "__main__":
 	#plt.ylabel('Encoder value')
 	#plt.title('Measured vs reference trajectories.')
 	
-	# row and column sharing
-	f, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, sharex='col')
-	ax1.set_ylim([-0.6,0.4])
-	ax1.set_title('left heel')
-	ax2.set_ylim([-1.8,0.2])
-	ax2.set_title('left knee')
-	ax3.set_ylim([-1.28,1.28])
-	ax3.set_title('left hip')
-	ax4.set_ylim([-0.2,0.3])
-	ax4.set_title('right heel')
-	ax5.set_ylim([-0.2,2.0])
-	ax5.set_title('right knee')
-	ax6.set_ylim([-1.4,1.3])
-	ax6.set_title('right hip')
+	## Plot encoder positions vs ref traj using row and column sharing
+	## Commented out for now due to finished testing! But kept incase needed. 
+	#f, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, sharex='col')
+	#ax1.set_ylim([-0.6,0.4])
+	#ax1.set_title('left heel')
+	#ax2.set_ylim([-1.8,0.2])
+	#ax2.set_title('left knee')
+	#ax3.set_ylim([-1.28,1.28])
+	#ax3.set_title('left hip')
+	#ax4.set_ylim([-0.2,0.3])
+	#ax4.set_title('right heel')
+	#ax5.set_ylim([-0.2,2.0])
+	#ax5.set_title('right knee')
+	#ax6.set_ylim([-1.4,1.3])
+	#ax6.set_title('right hip')
 	
-	ax1.plot(rslts["reference"][1:rslts["nloop"],1,0])
-	ax1.plot(rslts["angle1"][1:rslts["nloop"],rslts["motor_map"][1,0]])
-	ax2.plot(rslts["reference"][1:rslts["nloop"],1,1])
-	ax2.plot(rslts["angle1"][1:rslts["nloop"],rslts["motor_map"][1,1]])
-	ax3.plot(rslts["reference"][1:rslts["nloop"],1,2])
-	ax3.plot(rslts["angle1"][1:rslts["nloop"],rslts["motor_map"][1,2]])
-	ax4.plot(rslts["reference"][1:rslts["nloop"],0,0])
-	ax4.plot(rslts["angle0"][1:rslts["nloop"],rslts["motor_map"][0,0]])
-	ax5.plot(rslts["reference"][1:rslts["nloop"],0,1])
-	ax5.plot(rslts["angle0"][1:rslts["nloop"],rslts["motor_map"][0,1]])
-	ax6.plot(rslts["reference"][1:rslts["nloop"],0,2])
-	ax6.plot(rslts["angle0"][1:rslts["nloop"],rslts["motor_map"][0,2]])
-	plt.get_current_fig_manager().window.showMaximized()
-	#figManager = plt.get_current_fig_manager()
-	#figManager.window.showMaximized()
-	plt.show()
+	#ax1.plot(rslts["reference"][1:rslts["nloop"],1,0])
+	#ax1.plot(rslts["angle1"][1:rslts["nloop"],rslts["motor_map"][1,0]])
+	#ax2.plot(rslts["reference"][1:rslts["nloop"],1,1])
+	#ax2.plot(rslts["angle1"][1:rslts["nloop"],rslts["motor_map"][1,1]])
+	#ax3.plot(rslts["reference"][1:rslts["nloop"],1,2])
+	#ax3.plot(rslts["angle1"][1:rslts["nloop"],rslts["motor_map"][1,2]])
+	#ax4.plot(rslts["reference"][1:rslts["nloop"],0,0])
+	#ax4.plot(rslts["angle0"][1:rslts["nloop"],rslts["motor_map"][0,0]])
+	#ax5.plot(rslts["reference"][1:rslts["nloop"],0,1])
+	#ax5.plot(rslts["angle0"][1:rslts["nloop"],rslts["motor_map"][0,1]])
+	#ax6.plot(rslts["reference"][1:rslts["nloop"],0,2])
+	#ax6.plot(rslts["angle0"][1:rslts["nloop"],rslts["motor_map"][0,2]])
+	#plt.get_current_fig_manager().window.showMaximized()
 	
 	# End connection to Windows PC. 
 	s.close()
