@@ -61,5 +61,5 @@ Temporary Items
 *.fig
 *.png
 
-# Ignore workspace file. 
-*workspace.xml
+# Ignore pycharm .idea folder
+.idea*
