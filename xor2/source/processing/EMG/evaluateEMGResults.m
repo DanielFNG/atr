@@ -1,4 +1,4 @@
-function [processed_emg, averaged_waveforms] = ...
+function [raw_emg, processed_emg, averaged_waveforms] = ...
     evaluateEMGResults(data, peaks, channels, lrange, urange)
 
 %function processed_emg = ...
@@ -13,12 +13,7 @@ elseif nargin == 3
     urange = size(data,1);
 end
 
-if isscalar(channels)
-    n_channels = channels;
-    channels = 1:channels;
-else
-    n_channels = size(channels,2);
-end
+n_channels = size(channels,2);
 
 
 %% Qualitative EMG analysis. 
@@ -48,10 +43,12 @@ end
 %% Quantitative EMG analysis.
 
 % Create cell arrays to hold the averaged waveform for each channel and the 
-% filtered emg data also. 
+% filtered emg data also.
+raw_emg{1,n_channels} = [];
 averaged_waveforms{1,n_channels} = {};
 processed_emg{1,n_channels} = {};
 for i=1:n_channels
+    raw_emg{1,i} = data(lrange:urange,channels(1,i));
     % Process the raw EMG. Defaults of [200,6,80] are assumed in filterRawEMG,
     % but these can alternatively be supplied as optional arguments.
     processed_emg{1,i} = filterRawEMG(data(lrange:urange,channels(1,i)));
@@ -77,6 +74,8 @@ else
     display('Failed visual test. Exiting objective function calculation.');
     return
 end
+
+close(test);
 
 end
 

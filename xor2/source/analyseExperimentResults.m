@@ -1,9 +1,18 @@
-function analyseExperimentResults(save_name)
+function analyseExperimentResults(file_name, folder_name)
 % Calculate the objective function (defined herein) for data saved in
 % [save_name '.mat'], located in the data folder. 
 
+% Create path to the input data. 
+if nargin == 2
+    save_name = [folder_name filesep file_name];
+elseif nargin == 1
+    save_name = file_name;
+else
+    error('Incorrect number of inputs.');
+end
+    
 % EMG channels.
-channels = [1];%,2,3,4];
+channels = [1];
 
 % Indices for the assistance stage of the experiment, post-training.
 lrange = 8000; 
@@ -29,7 +38,7 @@ load([data_folder save_name '.mat']);
 
 % Below: deprecated, computes average waveforms instead - but this isn't
 % working well.
-[~, averaged_waveforms] = ...
+[raw_emg, processed_emg, averaged_waveforms] = ...
     evaluateEMGResults(ad3,peaks,channels,lrange,urange); 
 
 % Calculate the result of the objective function. 
@@ -41,7 +50,8 @@ fprintf('The objective function result was %f.\n', result);
 % Save the result for posterity in [save_name '_result.mat'], along with the 
 % processed_emg and averaged_waveforms for this case.
 % save([data_folder save_name '_result.mat'], 'result', 'processed_emg', 'averaged_waveforms');
-save([data_folder save_name '_result.mat'], 'result', 'processed_emg');
+save([data_folder 'results' filesep save_name], ...
+    'result', 'processed_emg', 'averaged_waveforms');
 
 end
 

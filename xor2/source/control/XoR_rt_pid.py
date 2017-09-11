@@ -214,7 +214,7 @@ def main(argv=None, freq=200, exptime=1, drivers=None, stiff=50., f_basic=False 
 		#K_d = 12.0
 		
 		## These work well for right heel. 
-		K_p = 4.0
+		K_p = 16.0
 		K_i = 0.0
 		#K_i = 0.1
 		K_d = 0.3
@@ -641,11 +641,11 @@ def main(argv=None, freq=200, exptime=1, drivers=None, stiff=50., f_basic=False 
 			#print "aft:",f_heel
 			
 		# Send current time to Matlab PC.
-		
 		string_time = "%.3f" % now
 		rknee_angle_time = "%.5f" % results["angle0"][loop_ct,4]
-			
+		emg_angle_time = "%.5f" % results["ad3"][loop_ct,3]
 		temp = string_time + rknee_angle_time
+		#temp = string_time + emg_angle_time
 		if loop_ct % 5 == 0:
 			s.send(temp[0:12])
 	

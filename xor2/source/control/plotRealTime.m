@@ -62,6 +62,7 @@ disp('Client connected.')
 % Prepare figure for plotting.
 f = figure('Name', 'Realtime Plot');
 plot(0:timestep:(exp_time-timestep),ref_traj(1:n_frames,leg,joint))
+%axis([0,2.5,-5,5]); % Use this when plotting RT EMG. 
 axis([0,2.5,-1,0.4]); % Configured for roughly one gait cycle for right hip.
 axis manual
 hold on
@@ -126,5 +127,6 @@ fclose(t);
 display('Experiment complete.');
 fprintf('Displayed %f seconds of data in %f seconds.\n', ...
     time(end,1) - time(1,1), time_taken);
+close(f);
 
 end
