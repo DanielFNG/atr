@@ -18,11 +18,11 @@ channels = [1];
 lrange = 8000; 
 urange = 12000;
 
-% Indices describing the start/end of each waveform in the region of interest 
-% according to the reference trajectory. This has been pre-calculated.
-% Since we pass data in the range (lrange:urange), which then becomes stored as
-% 1:(urange-lrange), we subtract (lrange-1) from raw_peaks to get the
-% adjusted peaks.
+% Indices describing the start/end of each waveform in the region of 
+% interest according to the reference trajectory. This has been 
+% pre-calculated. Since we pass data in the range (lrange:urange), which 
+% then becomes stored as 1:(urange-lrange), we subtract (lrange-1) from 
+% raw_peaks to get the adjusted peaks.
 raw_peaks = [8184,8630,9076,9522,9968,10414,10860,11306,11752];
 peaks = raw_peaks - (lrange - 1);
 
