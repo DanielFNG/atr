@@ -1,5 +1,5 @@
 function [result, terms] = ...
-    generalObjectiveFunction(filename, x, y, z, mode)
+    generalObjectiveFunction(filename, x_coeff, y_coeff, z_coeff, mode)
 % This is the general objective function as outlined in my ATR report which
 % was used to analyse the data collected while walking with the XoR2
 % exoskeleton.
@@ -71,17 +71,21 @@ if strcmp(mode, 'relative')
         peaks_unassisted);
     
     % Compute the relative result.
-    result = x*(total - no_assist_total)/no_assist_total*100 + ...
-        y*(peak - no_assist_peak)/no_assist_peak*100 + ...
-        z*(terr - no_assist_terr)/no_assist_terr*100;
+    result = x_coeff*(total - no_assist_total)/no_assist_total*100 + ...
+        y_coeff*(peak - no_assist_peak)/no_assist_peak*100 + ...
+        z_coeff*(terr - no_assist_terr)/no_assist_terr*100;
     
 elseif strcmp(mode, 'absolute')
+    no_assist_total = 'n/a';
+    no_assist_peak = 'n/a';
+    no_assist_terr = 'n/a';
     % Compute the absolute result. 
-    result = x*total + y*peak + z*terr;
+result = x_coeff*total + y_coeff*peak + z_coeff*terr;
 else
     error('mode should be relative or absolute')
 end
 
+terms.mode = mode;
 terms.total = total;
 terms.peak = peak;
 terms.terr = terr;
