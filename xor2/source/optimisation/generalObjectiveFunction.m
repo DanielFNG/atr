@@ -1,14 +1,13 @@
 function [result, terms] = ...
-    generalObjectiveFunction(filename, x_coeff, y_coeff, z_coeff, mode)
+    generalObjectiveFunction(filename, x_coeff, y_coeff, z_coeff, mode, channels)
 % This is the general objective function as outlined in my ATR report which
 % was used to analyse the data collected while walking with the XoR2
 % exoskeleton.
 
 % Channels used for the EMG sensors.
-channels = [2,3]; % For shank experiment.
-% channels = [1]; % For thigh experiment. 
-% channels = [2,4]; % For non-spanning experiment. 
-% Should double check that the above pre-sets are correct!
+% channels = [1]; % For shank experiment.
+% channels = [4]; % For thigh experiment. 
+% channels = [2]; % For non-spanning experiment.
 
 % Indices for the non-assistance stage of the experiment, post-training.
 lrange_unassisted = 2000;
@@ -50,6 +49,12 @@ end
 % Calculate absolute tracking error.
 terr = computeTrackingError(angle0, reference, peaks_assisted);
 
+% Save the mode and absolute terms.
+terms.mode = mode;
+terms.total = total;
+terms.peak = peak;
+terms.terr = terr;
+
 % If relative, calculate during non-assist period.
 if strcmp(mode, 'relative')
     % Calculate the average emg waveforms without assistance. 
@@ -75,23 +80,17 @@ if strcmp(mode, 'relative')
         y_coeff*(peak - no_assist_peak)/no_assist_peak*100 + ...
         z_coeff*(terr - no_assist_terr)/no_assist_terr*100;
     
+    % Save the relative terms.
+    terms.no_assist_total = no_assist_total;
+    terms.no_assist_peak = no_assist_peak;
+    terms.no_assist_terr = no_assist_terr;
 elseif strcmp(mode, 'absolute')
-    no_assist_total = 'n/a';
-    no_assist_peak = 'n/a';
-    no_assist_terr = 'n/a';
+    
     % Compute the absolute result. 
 result = x_coeff*total + y_coeff*peak + z_coeff*terr;
 else
     error('mode should be relative or absolute')
 end
-
-terms.mode = mode;
-terms.total = total;
-terms.peak = peak;
-terms.terr = terr;
-terms.no_assist_total = no_assist_total;
-terms.no_assist_peak = no_assist_peak;
-terms.no_assist_terr = no_assist_terr;
 
 end
 
