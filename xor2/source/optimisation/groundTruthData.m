@@ -1,4 +1,4 @@
-%% Script to create the ground truth graphs. 
+%% Script to create the ground truth data arrays. 
 
 % Paths to the data files.
 path_shank = [getenv('XOR2') filesep 'data' filesep 'shank_span'];
