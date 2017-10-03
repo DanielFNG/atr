@@ -57,7 +57,7 @@ def optimise_and_record(bo, x, known_max_y, known_max_x, max_iter, tradeoff):
 
 def main():
     # Implementation details.
-    max_iter = 3
+    max_iter = 20
     kappas = np.linspace(0.0, 10.0, 101)  # Change tradeoff parameter from 0.0 to 10.0 by 0.1.
 
     # Practical measurements.
@@ -87,11 +87,11 @@ def main():
     shank_results_y = []
 
     # For each value of the tradeoff parameter (kappa)...
-    # for kappa in kappas:
-    for kappa in [0.1, 0.5, 0.9]:
-        # Create BayesianOptimization object for the thigh_total and shank_total functions.
-        bo_thigh = BayesianOptimization(thigh_total, {'x': (min_thigh, max_thigh)})
-        bo_shank = BayesianOptimization(shank_total, {'x': (min_shank, max_shank)})
+    for kappa in kappas:
+        # Create BayesianOptimization object for the thigh_total and shank_total functions. Note that we take the
+        # negative of these functions since we are minimizing rather than maximizing.
+        bo_thigh = BayesianOptimization(lambda x: -thigh_total(x), {'x': (min_thigh, max_thigh)})
+        bo_shank = BayesianOptimization(lambda x: -shank_total(x), {'x': (min_shank, max_shank)})
 
         # Optimise and record.
         diff_x_thigh, diff_y_thigh = optimise_and_record(
