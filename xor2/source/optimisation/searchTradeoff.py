@@ -2,6 +2,7 @@ from __future__ import print_function
 from __future__ import division
 
 import numpy as np
+import scipy.io as sio
 
 from bayes_opt import BayesianOptimization
 
@@ -49,7 +50,7 @@ def optimise_and_record(bo, x, known_max_y, known_max_x, max_iter, tradeoff):
     for n_iterations in range(2, max_iter):
         bo.maximize(init_points=0, n_iter=1, kappa=tradeoff)
         mu = bo.gp.predict(x, return_std=False)
-        diff_x.append(abs(np.argmax(mu) - known_max_x))
+        diff_x.append(abs(x.item(np.argmax(mu)) - known_max_x))
         diff_y.append(abs(np.max(mu) - known_max_y))
 
     return diff_x, diff_y
@@ -57,8 +58,9 @@ def optimise_and_record(bo, x, known_max_y, known_max_x, max_iter, tradeoff):
 
 def main():
     # Implementation details.
-    max_iter = 20
-    kappas = np.linspace(0.0, 10.0, 101)  # Change tradeoff parameter from 0.0 to 10.0 by 0.1.
+    max_iter = 15
+    repetitions = 10
+    kappas = np.linspace(0.0, 10.0, 100)  # Change tradeoff parameter from 0.0 to 10.0 by 0.1.
 
     # Practical measurements.
     min_thigh = 0.0
@@ -79,34 +81,65 @@ def main():
         y_shank.append(shank_total(element))
 
     # Create structures (lists, to hold lists) which will store the overall results.
-    thigh_results_bo = []
-    thigh_results_x = []
-    thigh_results_y = []
-    shank_results_bo = []
-    shank_results_x = []
-    shank_results_y = []
+    thigh_results_x_mean = []
+    thigh_results_x_std = []
+    thigh_results_y_mean = []
+    thigh_results_y_std = []
+    shank_results_x_mean = []
+    shank_results_x_std = []
+    shank_results_y_mean = []
+    shank_results_y_std = []
 
     # For each value of the tradeoff parameter (kappa)...
     for kappa in kappas:
-        # Create BayesianOptimization object for the thigh_total and shank_total functions. Note that we take the
-        # negative of these functions since we are minimizing rather than maximizing.
-        bo_thigh = BayesianOptimization(lambda x: -thigh_total(x), {'x': (min_thigh, max_thigh)})
-        bo_shank = BayesianOptimization(lambda x: -shank_total(x), {'x': (min_shank, max_shank)})
+        rep_thigh_x = []
+        rep_thigh_y = []
+        rep_shank_x = []
+        rep_shank_y = []
+        for repetition in range(repetitions):
+            # Create BayesianOptimization object for the thigh_total and shank_total functions. Note that we take the
+            # negative of these functions since we are minimizing rather than maximizing.
+            bo_thigh = BayesianOptimization(lambda x: -thigh_total(x), {'x': (min_thigh, max_thigh)})
+            bo_shank = BayesianOptimization(lambda x: -shank_total(x), {'x': (min_shank, max_shank)})
 
-        # Optimise and record.
-        diff_x_thigh, diff_y_thigh = optimise_and_record(
-            bo_thigh, x_thigh, max(y_thigh), y_thigh.index(max(y_thigh)), max_iter, kappa)
-        diff_x_shank, diff_y_shank = optimise_and_record(
-            bo_shank, x_shank, max(y_shank), y_shank.index(max(y_shank)), max_iter, kappa)
-        thigh_results_bo.append(bo_thigh)
-        thigh_results_x.append(diff_x_thigh)
-        thigh_results_y.append(diff_y_thigh)
-        shank_results_bo.append(bo_shank)
-        shank_results_x.append(diff_x_shank)
-        shank_results_y.append(diff_y_shank)
+            # Optimise and record.
+            diff_x_thigh, diff_y_thigh = optimise_and_record(
+                bo_thigh, x_thigh, np.max(y_thigh), x_thigh.item(y_thigh.index(max(y_thigh))), max_iter, kappa)
+            diff_x_shank, diff_y_shank = optimise_and_record(
+                bo_shank, x_shank, np.max(y_shank), x_shank.item(y_shank.index(max(y_shank))), max_iter, kappa)
 
-    return thigh_results_bo, thigh_results_x, thigh_results_y, shank_results_bo, shank_results_x, shank_results_y
+            rep_thigh_x.append(diff_x_thigh)
+            rep_thigh_y.append(diff_y_thigh)
+            rep_shank_x.append(diff_x_shank)
+            rep_shank_y.append(diff_y_shank)
+
+        # Transpose the rep lists, so that each individual list corresponds to the same value of max_iter.
+        rep_thigh_x = list(map(list, zip(*rep_thigh_x)))
+        rep_thigh_y = list(map(list, zip(*rep_thigh_y)))
+        rep_shank_x = list(map(list, zip(*rep_shank_x)))
+        rep_shank_y = list(map(list, zip(*rep_shank_y)))
+
+        # For each kappa save a list of the mean and the variance of the repetition list for each case.
+        thigh_results_x_mean.append([np.mean(element_list) for element_list in rep_thigh_x])
+        thigh_results_x_std.append([np.std(element_list) for element_list in rep_thigh_x])
+        thigh_results_y_mean.append([np.mean(element_list) for element_list in rep_thigh_y])
+        thigh_results_y_std.append([np.std(element_list) for element_list in rep_thigh_y])
+        shank_results_x_mean.append([np.mean(element_list) for element_list in rep_shank_x])
+        shank_results_x_std.append([np.std(element_list) for element_list in rep_shank_x])
+        shank_results_y_mean.append([np.mean(element_list) for element_list in rep_shank_y])
+        shank_results_y_std.append([np.std(element_list) for element_list in rep_shank_y])
+
+    # Save the results for use in matlab. For reference: the result is a matrix, the columns of which index the
+    # iteration of the BO process (column 1 = iteration 1, column 2 = iteration 2, etc) and the rows of which
+    # index kappa (row 1 = first value of kappa, etc...)
+    sio.savemat('tradeoff_results.mat', {'thigh_x_mean': thigh_results_x_mean, 'thigh_x_std': thigh_results_x_std,
+                                         'thigh_y_mean': thigh_results_y_mean, 'thigh_y_std': thigh_results_y_std,
+                                         'shank_x_mean': shank_results_x_mean, 'shank_x_std': shank_results_x_std,
+                                         'shank_y_mean': shank_results_y_mean, 'shank_y_std': shank_results_y_std})
+
+    return (thigh_results_x_mean, thigh_results_x_std, thigh_results_y_mean, thigh_results_y_std,  shank_results_x_mean,
+            shank_results_x_std, shank_results_y_mean, shank_results_y_std)
 
 
 if __name__ == "__main__":
-    thigh_bo, thigh_x, thigh_y, shank_bo, shank_x, shank_y = main()
+    thigh_x_mean, thigh_x_std, thigh_y_mean, thigh_y_std, shank_x_mean, shank_x_std, shank_y_mean, shank_y_std = main()
