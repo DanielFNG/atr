@@ -72,13 +72,14 @@ def main():
     x_thigh = np.linspace(min_thigh, max_thigh, 10000).reshape(-1, 1)
     x_shank = np.linspace(min_shank, max_shank, 10000).reshape(-1, 1)
 
-    # Create tables for the thigh and shank functions, used for finding their maxima and maxlocs.
+    # Create tables for the thigh and shank functions, used for finding their maxima and maxlocs. Note that we take
+    # the negative of the function result because we are interested in minimising!
     y_thigh = []
     for element in x_thigh:
-        y_thigh.append(thigh_total(element))
+        y_thigh.append(-thigh_total(element))
     y_shank = []
     for element in x_shank:
-        y_shank.append(shank_total(element))
+        y_shank.append(-shank_total(element))
 
     # Create structures (lists, to hold lists) which will store the overall results.
     thigh_results_x_mean = []
