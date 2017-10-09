@@ -60,7 +60,7 @@ def main():
     # Implementation details.
     max_iter = 15
     repetitions = 10
-    kappas = np.linspace(0.0, 10.0, 100)  # Change tradeoff parameter from 0.0 to 10.0 by 0.1.
+    kappas = np.linspace(0.0, 10.0, 101)  # Change tradeoff parameter from 0.0 to 10.0 by 0.1.
 
     # Practical measurements.
     min_thigh = 0.0
