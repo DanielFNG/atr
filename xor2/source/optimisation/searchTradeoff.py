@@ -3,22 +3,80 @@ from __future__ import division
 
 import numpy as np
 import scipy.io as sio
+import matplotlib.pyplot as plt
+from matplotlib import gridspec
 
 from bayes_opt import BayesianOptimization
+
+
+def posterior(bo, x):
+    """
+    Method to aid in visualisation. See visualization.ipynb in external/BayesianOptimization/examples.
+
+    :param bo:
+        The Bayesian Optimization object.
+    :param x:
+        The array to use for the x dimension.
+
+    :return:
+        Mean and variance values along x based on the current belief of the objective function.
+    """
+    bo.gp.fit(bo.X, bo.Y)
+    mu, sigma = bo.gp.predict(x, return_std=True)
+    return mu, sigma
+
+
+def plot_gp(bo, x, y):
+    fig = plt.figure(figsize=(16, 10))
+    fig.suptitle('{} Steps'.format(len(bo.X)), fontsize = 30)
+
+    gs = gridspec.GridSpec(2, 1, height_ratios=[3, 1])
+    axis = plt.subplot(gs[0])
+    acq = plt.subplot(gs[1])
+
+    mu, sigma = posterior(bo, x)
+    axis.plot(x, y, linewidth=3, label='Target')
+    axis.plot(bo.X.flatten(), bo.Y, 'D', markersize=8, label=u'Observations', color='r')
+    axis.plot(x, mu, '--', color='k', label='Prediction')
+
+    axis.fill(np.concatenate([x, x[::-1]]),
+              np.concatenate([mu - 1.9600 * sigma, (mu + 1.9600 * sigma)[::-1]]),
+              alpha=.6, fc='c', ec='None', label='95% confidence interval')
+
+    fontsize = 30
+
+    axis.set_xlim((x[0], x[-1]))
+    axis.set_ylim((None, None))
+    axis.set_ylabel('f(x)', fontdict={'size': fontsize})
+    axis.set_xlabel('x', fontdict={'size': fontsize})
+    plt.rc('xtick', labelsize=8)
+    plt.rc('ytick', labelsize=8)
+
+    utility = bo.util.utility(x, bo.gp, 0)
+    acq.plot(x, utility, label='Utility Function', color='purple')
+    acq.plot(x[np.argmax(utility)], np.max(utility), '*', markersize=15,
+             label=u'Next Best Guess', markerfacecolor='gold', markeredgecolor='k', markeredgewidth=1)
+    acq.set_xlim((x[0], x[-1]))
+    acq.set_ylim((0, np.max(utility) + 0.5))
+    acq.set_ylabel('Utility', fontdict={'size': fontsize})
+    acq.set_xlabel('x', fontdict={'size': fontsize})
+
+    axis.legend(loc=2, bbox_to_anchor=(1.01, 1), borderaxespad=0., prop={'size': 40})
+    acq.legend(loc=2, bbox_to_anchor=(1.01, 1), borderaxespad=0., prop={'size': 40})
 
 
 def thigh_total(x):
     return (0.002901443099453 * x ** 7 + (-0.108582947697938) * x ** 6 + 1.590490343582480 * x ** 5 + (
         -11.418714610996563) * x ** 4
             + 40.776324462043448 * x ** 3 + (-62.991806316373179) * x ** 2 + 21.796071382477542 * x + (
-        5.772354116295380))/3
+        5.772354116295380))#/3
 
 
 def shank_total(x):
     return (0.003316535284540 * x ** 7 + (-0.141420929190400) * x ** 6 + 2.413719719139595 * x ** 5 + (
         -20.950320407359662) * x ** 4
             + 96.859771488963474 * x ** 3 + (-2.275093222070007e+02) * x ** 2 + 2.316303649040210e+02 * x +
-            (-70.885259395894977))/5
+            (-70.885259395894977))#/5
 
 
 def optimise_and_record(bo, x, known_max_y, known_max_x, max_iter, tradeoff):
@@ -143,4 +201,21 @@ def main():
 
 
 if __name__ == "__main__":
-    thigh_x_mean, thigh_x_std, thigh_y_mean, thigh_y_std, shank_x_mean, shank_x_std, shank_y_mean, shank_y_std = main()
+    #thigh_x_mean, thigh_x_std, thigh_y_mean, thigh_y_std, shank_x_mean, shank_x_std, shank_y_mean, shank_y_std = main()
+
+    min_thigh = 0.0
+    max_thigh = 10.0
+    description = 'thigh-report'
+    x_thigh = np.linspace(min_thigh, max_thigh, 10000).reshape(-1, 1)
+    y_thigh = []
+    for element in x_thigh:
+        y_thigh.append(thigh_total(element)*-1)
+    bo_thigh = BayesianOptimization(lambda x: -thigh_total(x), {'x': (min_thigh, max_thigh)})
+    tradeoff = 8.5
+    max_iter = 8
+    bo_thigh.maximize(init_points=2, n_iter=0, acq='ucb', kappa=tradeoff)
+    for n_iterations in range(2, max_iter):
+        bo_thigh.maximize(init_points=0, n_iter=1, kappa=tradeoff)
+        plot_gp(bo_thigh, x_thigh, y_thigh)
+        plt.show()
+        plt.savefig(description + str(n_iterations) + '.png', orientation='landscape', bbox_inches='tight')

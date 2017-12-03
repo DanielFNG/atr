@@ -62,4 +62,4 @@ Temporary Items
 *.png
 
 # Ignore pycharm .idea folder
-.idea*
+.idea
