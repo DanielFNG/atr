@@ -4,7 +4,8 @@ function [vec_size, type] = vectorSize(vector)
 if ~ismatrix(vector)
     error('Input is not a vector (dimension > 2).');
 elseif size(vector,1) == 1 && size(vector, 2) == 1
-    error('Input is not a vector (scalar).');
+    vec_size = size(vector,1);
+    type = 'n/a';
 elseif size(vector,1) ~= 1 && size(vector, 2) ~= 1
     error('Input is not a vector (matrix).');
 elseif size(vector,1) == 1
