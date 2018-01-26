@@ -8,7 +8,8 @@ import org.opensim.modeling.*
 % Some defaults. 
 model_path = ...
     'ReferenceData\XoR2-correct-bushing-locations-new-default-coords.osim';
-save_dir = ['thigh=' num2str(thigh) 'shank=' num2str(shank)];
+save_dir = ['Data' filesep 'TrialRun' filesep 'thigh=' num2str(thigh) ...
+    'shank=' num2str(shank)];
 save_name = 'model.osim';
 
 % Convert input to bushing locations.

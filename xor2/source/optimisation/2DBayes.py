@@ -135,7 +135,7 @@ if __name__ == "__main__":
         bo.maximize(init_points=0, n_iter=1, kappa=trade_off)
 
     # Save bo.
-    pickle.dump(bo, open("bo_save.p", "wb"))
+    pickle.dump(bo, open("Data/TrialRun/bo_save.p", "wb"))
 
     # For plotting.
     x = y = np.linspace(0, 6, 300)
@@ -147,13 +147,9 @@ if __name__ == "__main__":
     fig, axis = plt.subplots(1, 1, figsize=(14, 10))
     gridsize = 150
 
-    im = axis.hexbin(x, y, C=z, gridsize=gridsize, cmap=cm.jet, bins=None, vmin=-0.9, vmax=2.1)
-    axis.axis([x.min(), x.max(), y.min(), y.max()])
-
     cb = fig.colorbar(im, )
     cb.set_label('Value')
 
-    plot_2d("{:03}".format(len(bo.X)))
     plt.ioff()
     plot_2d("{:03}".format(len(bo.X)))
-    plt.savefig(description + '.png', orientation='landscape', bbox_inches='tight')
+    plt.savefig('Data/TrialRun/' + description + '.png', orientation='landscape', bbox_inches='tight')
