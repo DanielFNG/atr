@@ -26,9 +26,13 @@
 		<!--Integrator error tolerance. When the error is greater, the integrator step size is decreased.-->
 		<integrator_error_tolerance>1e-005</integrator_error_tolerance>
 		<!--Set of analyses to be run during the investigation.-->
-		<AnalysisSet name="Analyses">
-			<objects />
-			<groups />
+        <AnalysisSet name="Analyses">
+            <objects>
+                <ProbeReporter name="MetabolicsReporter">
+                <!--All properties of this object have their default values.-->
+                </ProbeReporter>
+            </objects>
+            <groups />
 		</AnalysisSet>
 		<!--Controller objects in the model.-->
 		<ControllerSet name="Controllers">

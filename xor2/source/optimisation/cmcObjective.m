@@ -5,10 +5,24 @@ function hamstringPower = cmcObjective(thigh, shank)
 % Import OpenSim modelling classes.
 import org.opensim.modeling.*
 
+if nargin == 1
+    if length(thigh) == 2
+        shank = thigh(2);
+        thigh = thigh(1);
+    else
+        error('weird input arguments');
+    end
+elseif nargin ~= 2
+    error('weird input arguments');
+end
+    
+% Display info.
+fprintf('Searching for thigh %f and shank %f.\n', thigh, shank);
+
 % Some defaults. 
 model_path = ...
     'ReferenceData\XoR2-correct-bushing-locations-new-default-coords.osim';
-save_dir = ['Data' filesep 'TrialRun' filesep 'thigh=' num2str(thigh) ...
+save_dir = ['Data' filesep 'BruteForceFullSearch' filesep 'thigh=' num2str(thigh) ...
     'shank=' num2str(shank)];
 save_name = 'model.osim';
 
@@ -184,26 +198,37 @@ cmc = CMCTool('ReferenceData\testCMC_TuningBushings.xml');
 cmc.setModelFilename(['C:\Users\Daniel\Documents\GitHub\atr\xor2\source\optimisation\' save_dir filesep save_name]);
 cmc.loadModel('ReferenceData\testCMC_TuningBushings.xml');
 cmc.updateModelForces(cmc.getModel(), 'ReferenceData\testCMC_TuningBushings.xml');
+cmc.addAnalysisSetToModel();
 mkdir(results_folder);
 cmc.setResultsDir(results_folder);
 success = cmc.run();
 
-if success
-    result = Data(['C:\Users\Daniel\Documents\GitHub\atr\xor2\source\optimisation\' save_dir filesep 'CMC' filesep 'XoR2-Human_Actuation_power.sto']);
-    powers = result.getDataCorrespondingToLabel('semimem_l') + ...
-        result.getDataCorrespondingToLabel('semiten_l') + ...
-        result.getDataCorrespondingToLabel('bifemlh_l') + ...
-        result.getDataCorrespondingToLabel('bifemsh_l') + ...
-        result.getDataCorrespondingToLabel('semimem_r') + ...
-        result.getDataCorrespondingToLabel('semiten_r') + ...
-        result.getDataCorrespondingToLabel('bifemlh_r') + ...
-        result.getDataCorrespondingToLabel('bifemsh_r');
-    hamstringPower = sum(powers)/vectorSize(powers); % Average power consumption. 
-else
-    hamstringPower = 1000;
+% Calc mass of the model. 
+n_bodies = bodies.getSize();
+total_mass = 0;
+for i=1:n_bodies
+    total_mass = total_mass + bodies.get(i-1).getMass();
 end
 
-% If positive, hamstrings applied energy to model, if negative, hamstrings
-% overall took in energy. 
+if success
+    result = CMCResults([results_folder filesep 'XoR2-Human'], 1); % 1 is an ugly way of saying no moment arms
+%     result = Data(['C:\Users\Daniel\Documents\GitHub\atr\xor2\source\optimisation\' save_dir filesep 'CMC' filesep 'XoR2-Human_Actuation_power.sto']);
+%     powers = result.getDataCorrespondingToLabel('semimem_l') + ...
+%         result.getDataCorrespondingToLabel('semiten_l') + ...
+%         result.getDataCorrespondingToLabel('bifemlh_l') + ...
+%         result.getDataCorrespondingToLabel('bifemsh_l') + ...
+%         result.getDataCorrespondingToLabel('semimem_r') + ...
+%         result.getDataCorrespondingToLabel('semiten_r') + ...
+%         result.getDataCorrespondingToLabel('bifemlh_r') + ...
+%         result.getDataCorrespondingToLabel('bifemsh_r');
+%     hamstringPower = sum(powers)/vectorSize(powers); % Average power consumption.
+    hamstringPower = ...
+        calculateAvgUniMusclePower(result, 'semimem_r', total_mass) + ...
+        calculateAvgUniMusclePower(result, 'semiten_r', total_mass) + ...
+        calculateAvgUniMusclePower(result, 'bifemlh_r', total_mass) + ...
+        calculateAvgUniMusclePower(result, 'bifemsh_r', total_mass);
+else
+    hamstringPower = 50;
+end 
 
 end

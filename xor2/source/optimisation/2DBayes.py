@@ -24,6 +24,11 @@ def cmc_objective(thigh, shank):
     return result
 
 
+def cmc_thigh_objective(thigh):
+    result = -eng.cmcObjective(np.asscalar(thigh), 0)
+    return result
+
+
 def unique_rows(a):
     """
     A functions to trim repeated rows that may appear when optimizing.
@@ -117,17 +122,19 @@ if __name__ == "__main__":
     eng = matlab.engine.start_matlab()
 
     # Set input parameters BO.
-    description = 'testing2D'
+    description = 'testing1D_thigh'
     [min_thigh, max_thigh] = [0.0, 10.0]
     [min_shank, max_shank] = [0.5, 11.5]
     [x_thigh, x_shank] = [np.linspace(min_thigh, max_thigh, 10000).reshape(-1, 1),
                           np.linspace(min_shank, max_shank, 10000).reshape(-1, 1)]
 
     # Initialise and perform BO.
-    bo = BayesianOptimization(
-        cmc_objective, {'thigh': (min_thigh, max_thigh), 'shank': (min_shank, max_shank)})
+    # bo = BayesianOptimization(
+    #    cmc_objective, {'thigh': (min_thigh, max_thigh), 'shank': (min_shank, max_shank)})
+    bo = BayesianOptimization(cmc_thigh_objective, {'thigh': (min_thigh, max_thigh)})
     trade_off = 5
-    max_iter = 50
+    # max_iter = 50
+    max_iter = 15
     bo.maximize(init_points=2, n_iter=0, acq='ucb', kappa=trade_off)
 
     for n_iterations in range(2, max_iter):
@@ -135,21 +142,21 @@ if __name__ == "__main__":
         bo.maximize(init_points=0, n_iter=1, kappa=trade_off)
 
     # Save bo.
-    pickle.dump(bo, open("Data/TrialRun/bo_save.p", "wb"))
+    pickle.dump(bo, open("Data/TrialRun1D/bo_save.p", "wb"))
 
-    # For plotting.
-    x = y = np.linspace(0, 6, 300)
-    X, Y = np.meshgrid(x, y)
-    x = X.ravel()
-    y = Y.ravel()
-    X = np.vstack([x, y]).T[:, [1, 0]]
-    z = test_objective(x, y)
-    fig, axis = plt.subplots(1, 1, figsize=(14, 10))
-    gridsize = 150
-
-    cb = fig.colorbar(im, )
-    cb.set_label('Value')
-
-    plt.ioff()
-    plot_2d("{:03}".format(len(bo.X)))
-    plt.savefig('Data/TrialRun/' + description + '.png', orientation='landscape', bbox_inches='tight')
+    # # For plotting.
+    # x = y = np.linspace(0, 6, 300)
+    # X, Y = np.meshgrid(x, y)
+    # x = X.ravel()
+    # y = Y.ravel()
+    # X = np.vstack([x, y]).T[:, [1, 0]]
+    # z = test_objective(x, y)
+    # fig, axis = plt.subplots(1, 1, figsize=(14, 10))
+    # gridsize = 150
+    #
+    # cb = fig.colorbar(im, )
+    # cb.set_label('Value')
+    #
+    # plt.ioff()
+    # plot_2d("{:03}".format(len(bo.X)))
+    # plt.savefig('Data/TrialRun/' + description + '.png', orientation='landscape', bbox_inches='tight')

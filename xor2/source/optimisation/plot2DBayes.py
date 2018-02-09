@@ -7,6 +7,7 @@ from matplotlib import cm
 from matplotlib import gridspec
 import matlab.engine
 import pickle
+import copy
 
 from bayes_opt import BayesianOptimization
 
@@ -52,7 +53,7 @@ if __name__ == "__main__":
     eng = matlab.engine.start_matlab()
 
     # Load the saved BO object.
-    bo = pickle.load(open("Data/TrialRun/bo_save.p", "rb"))
+    bo = pickle.load(open("bo_save.p", "rb"))
 
     x = np.linspace(0, 10, 300)
     y = np.linspace(0.5, 11.5, 300)
@@ -68,58 +69,65 @@ if __name__ == "__main__":
         if item == -1000.0:
             bo.Y[index] = min_value
 
-    mu, s, ut = posterior(bo, X)
+    for i in range(2, len(bo.X)):
 
-    fig, ax = plt.subplots(2, 2, figsize=(14, 10))
-    gridsize = 150
+        co = copy.deepcopy(bo)
+        co.X = co.X[0:i]
+        co.Y = co.Y[0:i]
 
-    # fig.suptitle('Bayesian Optimization in Action', fontdict={'size':30})
+        mu, s, ut = posterior(co, X)
 
-    # GP regression output
-    ax[0][0].set_title('Gausian Process Predicted Mean', fontdict={'size': 15})
-    im00 = ax[0][0].hexbin(x, y, C=mu, gridsize=gridsize, cmap=cm.jet, bins=None)
-    ax[0][0].axis([x.min(), x.max(), y.min(), y.max()])
-    ax[0][0].plot(bo.X[:, 1], bo.X[:, 0], 'D', markersize=4, color='k', label='Observations')
+        fig, ax = plt.subplots(2, 2, figsize=(14, 10))
+        gridsize = 150
 
-    ax[1][0].set_title('Gausian Process Variance', fontdict={'size': 15})
-    im01 = ax[1][0].hexbin(x, y, C=s, gridsize=gridsize, cmap=cm.jet, bins=None)
-    ax[1][0].axis([x.min(), x.max(), y.min(), y.max()])
+        # fig.suptitle('Bayesian Optimization in Action', fontdict={'size':30})
 
-    ax[1][1].set_title('Acquisition Function', fontdict={'size': 15})
-    im11 = ax[1][1].hexbin(x, y, C=ut, gridsize=gridsize, cmap=cm.jet, bins=None)
+        # GP regression output
+        ax[0][0].set_title('Gausian Process Predicted Mean', fontdict={'size': 15})
+        im00 = ax[0][0].hexbin(x, y, C=mu, gridsize=gridsize, cmap=cm.jet, bins=None)
+        ax[0][0].axis([x.min(), x.max(), y.min(), y.max()])
+        ax[0][0].plot(co.X[:, 1], co.X[:, 0], 'D', markersize=4, color='k', label='Observations')
 
-    np.where(ut.reshape((300, 300)) == ut.max())[0]
-    np.where(ut.reshape((300, 300)) == ut.max())[1]
+        ax[1][0].set_title('Gausian Process Variance', fontdict={'size': 15})
+        im01 = ax[1][0].hexbin(x, y, C=s, gridsize=gridsize, cmap=cm.jet, bins=None)
+        ax[1][0].axis([x.min(), x.max(), y.min(), y.max()])
 
-    ax[1][1].plot([np.where(ut.reshape((300, 300)) == ut.max())[1] / 50.,
-                   np.where(ut.reshape((300, 300)) == ut.max())[1] / 50.],
-                  [0, 11.5],
-                  'k-', lw=2, color='k')
+        ax[1][1].set_title('Acquisition Function', fontdict={'size': 15})
+        im11 = ax[1][1].hexbin(x, y, C=ut, gridsize=gridsize, cmap=cm.jet, bins=None)
 
-    ax[1][1].plot([0, 11.5],
-                  [np.where(ut.reshape((300, 300)) == ut.max())[0] / 50.,
-                   np.where(ut.reshape((300, 300)) == ut.max())[0] / 50.],
-                  'k-', lw=2, color='k')
+        np.where(ut.reshape((300, 300)) == ut.max())[0]
+        np.where(ut.reshape((300, 300)) == ut.max())[1]
 
-    ax[1][1].axis([x.min(), x.max(), y.min(), y.max()])
+        ax[1][1].plot([np.where(ut.reshape((300, 300)) == ut.max())[1] / 50.,
+                       np.where(ut.reshape((300, 300)) == ut.max())[1] / 50.],
+                      [0, 11.5],
+                      'k-', lw=2, color='k')
 
-    # Create average array.
-    for index, item in enumerate(bo.Y):
-        bo.Y[index] = 100*(bo.Y[index] - min_value)/min_value*(-1)
+        ax[1][1].plot([0, 11.5],
+                      [np.where(ut.reshape((300, 300)) == ut.max())[0] / 50.,
+                       np.where(ut.reshape((300, 300)) == ut.max())[0] / 50.],
+                      'k-', lw=2, color='k')
 
-    mu, s, ut = posterior(bo, X)
+        ax[1][1].axis([x.min(), x.max(), y.min(), y.max()])
 
-    ax[0][1].set_title('Average Power Reduction as % Compared to Worst Case', fontdict={'size': 15})
-    im10 = ax[0][1].hexbin(x, y, C=mu, gridsize=gridsize, cmap=cm.jet, bins=None)
-    ax[0][1].axis([x.min(), x.max(), y.min(), y.max()])
-    ax[0][1].plot(bo.X[:, 1], bo.X[:, 0], 'D', markersize=4, color='k')
+        do = copy.deepcopy(bo)
+        for index, item in enumerate(do.Y):
+            do.Y[index] = 100 * (do.Y[index] - min_value) / min_value * (-1)
+        do.X = do.X[0:i]
+        do.Y = do.Y[0:i]
 
-    for im, axis in zip([im00, im10, im01, im11], ax.flatten()):
-        cb = fig.colorbar(im, ax=axis)
-        # cb.set_label('Value')
+        mu, s, ut = posterior(do, X)
 
-    plt.tight_layout()
+        ax[0][1].set_title('Average Power Reduction as % Compared to Worst Case', fontdict={'size': 15})
+        im10 = ax[0][1].hexbin(x, y, C=mu, gridsize=gridsize, cmap=cm.jet, bins=None)
+        ax[0][1].axis([x.min(), x.max(), y.min(), y.max()])
+        ax[0][1].plot(do.X[:, 1], do.X[:, 0], 'D', markersize=4, color='k')
 
-    # Save or show figure?
-    # fig.savefig('bo_eg_' + name + '.png')
-    plt.show()
+        for im, axis in zip([im00, im10, im01, im11], ax.flatten()):
+            cb = fig.colorbar(im, ax=axis)
+            # cb.set_label('Value')
+
+        plt.tight_layout()
+
+        # Save or show figure?
+        fig.savefig('gif/do_eg_' + str(i) + '.png')
