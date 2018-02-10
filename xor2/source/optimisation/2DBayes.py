@@ -13,7 +13,7 @@ from bayes_opt import BayesianOptimization
 
 
 # This function is a simple parabola with maximum at (5,5).
-def test_objective(thigh, shank):
+def toy_objective(thigh, shank):
     return -((thigh-5)**2 + (shank-5)**2)
 
 
