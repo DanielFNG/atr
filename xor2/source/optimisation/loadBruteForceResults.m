@@ -1,5 +1,5 @@
 % Directory.
-dir = 'F:\Dropbox\PhD\Robio 2018\Data\BruteForceFullSearch';
+dir = 'F:\Dropbox\PhD\Robio 2018\Data\LongerBruteForceFullSearch';
 model = 'C:\Users\danie\Documents\GitHub\atr\xor2\source\optimisation\ReferenceData\XoR2-correct-bushing-locations-new-default-coords.osim';
 
 % Calc mass of the model. 
@@ -25,8 +25,8 @@ shank_offset = 1 - shank_points(1)/step_size;
 
 % Initialise a results matrix.
 results_power = zeros(length(thigh_points), length(shank_points));
+results_metabolic_power = zeros(length(thigh_points), length(shank_points));
 results_activation = zeros(length(thigh_points), length(shank_points));
-results_total_power = zeros(length(thigh_points), length(shank_points));
 
 % Loop over the grid and poll the value of cmcObjective. 
 for thigh=thigh_points
@@ -39,40 +39,49 @@ for thigh=thigh_points
 %             calculateAvgUniMusclePower(result, 'semiten_r', total_mass) + ...
 %             calculateAvgUniMusclePower(result, 'bifemlh_r', total_mass) + ...
 %             calculateAvgUniMusclePower(result, 'bifemsh_r', total_mass);
-            gas_power = calculateAvgUniMusclePower(result, 'med_gas_r', total_mass) + calculateAvgUniMusclePower(result, 'lat_gas_r', total_mass);
+            power = result.powers.getDataCorrespondingToLabel('med_gas_r') + result.powers.getDataCorrespondingToLabel('lat_gas_r');
+            gas_metabolic_power = calculateAvgUniMusclePower(result, 'med_gas_r', total_mass) + calculateAvgUniMusclePower(result, 'lat_gas_r', total_mass);
             time = result.activations.Timesteps;
-            total_gas_power = gas_power*(time(end)-time(1));
             activation = result.activations.getDataCorrespondingToLabel('med_gas_r') + result.activations.getDataCorrespondingToLabel('lat_gas_r');
             gas_activation = ...
                 trapz(time, activation)/(total_mass*(time(end)-time(1)));
-        catch ME
+            gas_power = ...
+                trapz(time, power)/(total_mass*(time(end)-time(1)));
+        catch
 %             hamstringPower = 50;
-            total_gas_power = 50;
-            gas_power = 50;
-            gas_activation = 50;
+            fprintf('Failed for thigh = %f and shank = %f.\n', thigh, shank);
+            gas_metabolic_power = NaN;
+            gas_activation = NaN;
+            gas_power = NaN;
         end
-        results_power(thigh/step_size + thigh_offset, ...
-            shank/step_size + shank_offset) = gas_power;
-        results_total_power(thigh/step_size + thigh_offset, ...
-            shank/step_size + shank_offset) = total_gas_power;
+        results_metabolic_power(thigh/step_size + thigh_offset, ...
+            shank/step_size + shank_offset) = gas_metabolic_power;
         results_activation(thigh/step_size + thigh_offset, ...
             shank/step_size + shank_offset) = gas_activation;
+        results_power(thigh/step_size + thigh_offset, ...
+            shank/step_size + shank_offset) = gas_power;
     end
 end
 
 % Remove the 50's.
-results_power(results_power == 50) = 0;
-results_total_power(results_total_power == 50) = 0;
-results_activation(results_activation == 50) = 0;
-max_power = max(max(results_power));
-max_total_power = max(max(results_total_power));
+results_metabolic_power = fillmissing(results_metabolic_power,'pchip');
+results_activation = fillmissing(results_activation,'pchip');
+results_power = fillmissing(results_power,'pchip');
+
+% % Get the indices which failed. 
+% failures = results_power == 50;
+% results_power(results_power == 50) = 0;
+% results_total_power(results_total_power == 50) = 0;
+% results_activation(results_activation == 50) = 0;
+max_metabolic_power = max(max(results_metabolic_power));
 max_activation = max(max(results_activation));
-results_power(results_power == 0) = max_power;
-results_total_power(results_total_power == 0) = max_total_power;
-results_activation(results_activation == 0) = max_activation;
+max_power = max(max(results_power));
+% results_power(results_power == 0) = max_power;
+% results_total_power(results_total_power == 0) = max_total_power;
+% results_activation(results_activation == 0) = max_activation;
 
 % Calculate the reduction at each cuff position as a percentage of the
 % maximum. 
-percentage_power = (max_power - results_power)/max_power*100;
-percentage_total_power = (max_total_power - results_total_power)/max_total_power*100;
+percentage_metabolic_power = (max_metabolic_power - results_metabolic_power)/max_metabolic_power*100;
 percentage_activation = (max_activation - results_activation)/max_activation*100;
+percentage_power = (max_power - results_power)/max_power*100;
