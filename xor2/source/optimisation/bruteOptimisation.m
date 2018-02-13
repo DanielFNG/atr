@@ -13,13 +13,11 @@
 % [x, fval, exitflag, output] = patternsearch(fun, x0, A, b, Aeq, beq, lb, ub);
 
 % Define the step size of the linear grid we search through.
-%step_size = 0.5;
-step_size = 2.0;
+step_size = 0.5;
 
 % Domain of the thigh and shank cuffs.
-thigh_points = 0:step_size:10.0;
-%shank_points = 0.5:step_size:11.5;
-shank_points = 0.5:step_size:10.5;
+thigh_points = 5.0:step_size:10.0;
+shank_points = 0.5:step_size:11.5;
 
 % For setting the results matrix values correctly. 
 thigh_offset = 1 - thigh_points(1)/step_size;

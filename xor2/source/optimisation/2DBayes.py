@@ -19,7 +19,7 @@ def toy_objective(thigh, shank):
 
 def cmc_objective(thigh, shank):
     print("Starting Matlab step.")
-    result = -eng.cmcObjective(np.asscalar(thigh), np.asscalar(shank)) # Be sure to test whether you can just pass this directly below, i.e. don't need to define cmc_objective.
+    result = -eng.newCMCObjectiveWithValue(np.asscalar(thigh), np.asscalar(shank)) # Be sure to test whether you can just pass this directly below, i.e. don't need to define cmc_objective.
     print("This worked.")
     return result
 
@@ -128,21 +128,19 @@ if __name__ == "__main__":
     [x_thigh, x_shank] = [np.linspace(min_thigh, max_thigh, 10000).reshape(-1, 1),
                           np.linspace(min_shank, max_shank, 10000).reshape(-1, 1)]
 
-    # Initialise and perform BO.
-    # bo = BayesianOptimization(
-    #    cmc_objective, {'thigh': (min_thigh, max_thigh), 'shank': (min_shank, max_shank)})
-    bo = BayesianOptimization(cmc_thigh_objective, {'thigh': (min_thigh, max_thigh)})
-    trade_off = 5
-    # max_iter = 50
-    max_iter = 15
-    bo.maximize(init_points=2, n_iter=0, acq='ucb', kappa=trade_off)
+    # Some settings.
+    max_iter = 20
+    trade_off_values = [2, 5, 8]
 
-    for n_iterations in range(2, max_iter):
-        print("hi")
-        bo.maximize(init_points=0, n_iter=1, kappa=trade_off)
+    for element in trade_off_values:
+        # Initialise and perform BO.
+        bo = BayesianOptimization(cmc_objective, {'thigh': (min_thigh, max_thigh), 'shank': (min_shank, max_shank)})
+        bo.maximize(init_points=2, n_iter=0, acq='ucb', kappa=element)
+        for n_iterations in range(2, max_iter):
+            bo.maximize(init_points=0, n_iter=1, kappa=element)
 
-    # Save bo.
-    pickle.dump(bo, open("Data/TrialRun1D/bo_save.p", "wb"))
+        # Save bo result.
+        pickle.dump(bo, open("D:/Dropbox/PhD/Robio 2018/Data/BayesOpt/bo_save_" + str(element) + ".p", "wb"))
 
     # # For plotting.
     # x = y = np.linspace(0, 6, 300)
