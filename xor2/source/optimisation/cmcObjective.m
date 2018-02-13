@@ -21,8 +21,8 @@ fprintf('Searching for thigh %f and shank %f.\n', thigh, shank);
 
 % Some defaults. 
 model_path = ...
-    'CopyForTesting\XoR2-correct-bushing-locations-new-default-coords.osim';
-save_dir = ['Data' filesep 'LongerBruteForceFullSearch' filesep 'thigh=' num2str(thigh) ...
+    'ModelRedraftCopy\XoR2-correct-bushing-locations-new-default-coords.osim';
+save_dir = ['F:\Dropbox\PhD\Robio 2018\Data\NewModelBruteForceFullSearch' filesep 'thigh=' num2str(thigh) ...
     'shank=' num2str(shank)];
 save_name = 'model.osim';
 
@@ -193,9 +193,9 @@ end
 xmlwrite([save_dir filesep save_name], xml_model);
 
 %% Perform CMC for 0.5s. 
-results_folder = ['C:\Users\danie\Documents\GitHub\atr\xor2\source\optimisation\' save_dir filesep 'CMC'];
+results_folder = [save_dir filesep 'CMC'];
 cmc = CMCTool('CopyForTesting\testCMC_TuningBushings.xml');
-cmc.setModelFilename(['C:\Users\danie\Documents\GitHub\atr\xor2\source\optimisation\' save_dir filesep save_name]);
+cmc.setModelFilename([save_dir filesep save_name]);
 cmc.loadModel('CopyForTesting\testCMC_TuningBushings.xml');
 cmc.updateModelForces(cmc.getModel(), 'CopyForTesting\testCMC_TuningBushings.xml');
 cmc.addAnalysisSetToModel();

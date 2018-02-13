@@ -13,11 +13,13 @@
 % [x, fval, exitflag, output] = patternsearch(fun, x0, A, b, Aeq, beq, lb, ub);
 
 % Define the step size of the linear grid we search through.
-step_size = 0.5;
+%step_size = 0.5;
+step_size = 2.0;
 
 % Domain of the thigh and shank cuffs.
 thigh_points = 0:step_size:10.0;
-shank_points = 0.5:step_size:11.5;
+%shank_points = 0.5:step_size:11.5;
+shank_points = 0.5:step_size:10.5;
 
 % For setting the results matrix values correctly. 
 thigh_offset = 1 - thigh_points(1)/step_size;
@@ -29,7 +31,6 @@ results = zeros(length(thigh_points), length(shank_points));
 % Loop over the grid and poll the value of cmcObjective. 
 for thigh=thigh_points
     for shank=shank_points
-        results(thigh/step_size + thigh_offset, ...
-            shank/step_size + shank_offset) = cmcObjective(thigh, shank);
+        newCMCObjective(thigh, shank);
     end
 end
