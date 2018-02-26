@@ -130,7 +130,8 @@ if __name__ == "__main__":
 
     # Some settings.
     max_iter = 20
-    trade_off_values = [2, 5, 8]
+    # trade_off_values = [2, 5, 8]
+    trade_off_values = [8]
 
     for element in trade_off_values:
         # Initialise and perform BO.

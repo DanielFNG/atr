@@ -52,8 +52,10 @@ if __name__ == "__main__":
     # Start the MATLAB engine.
     eng = matlab.engine.start_matlab()
 
+    name = "bo_save_5"
+
     # Load the saved BO object.
-    bo = pickle.load(open("bo_save.p", "rb"))
+    bo = pickle.load(open("bo_saves/" + name + ".p", "rb"))
 
     x = np.linspace(0, 10, 300)
     y = np.linspace(0.5, 11.5, 300)
@@ -63,13 +65,17 @@ if __name__ == "__main__":
     X = np.vstack([x, y]).T[:, [1, 0]]
 
     # Removed failed values.
-    successful_values = [val for val in bo.Y if val != -1000.0]
+    successful_values = [val for val in bo.Y if val != -50.0]
     min_value = min(successful_values)
     for index, item in enumerate(bo.Y):
-        if item == -1000.0:
+        if item == -50.0:
             bo.Y[index] = min_value
+            print('Had to do some replacing.')
 
-    for i in range(2, len(bo.X)):
+    start_value = 2
+
+    for i in range(start_value, len(bo.X) - 1):
+    #for i in range(len(bo.X)-2, len(bo.X)):
 
         co = copy.deepcopy(bo)
         co.X = co.X[0:i]
@@ -86,7 +92,7 @@ if __name__ == "__main__":
         ax[0][0].set_title('Gausian Process Predicted Mean', fontdict={'size': 15})
         im00 = ax[0][0].hexbin(x, y, C=mu, gridsize=gridsize, cmap=cm.jet, bins=None)
         ax[0][0].axis([x.min(), x.max(), y.min(), y.max()])
-        ax[0][0].plot(co.X[:, 1], co.X[:, 0], 'D', markersize=4, color='k', label='Observations')
+        ax[0][0].plot(co.X[0:i, 0], co.X[0:i, 1], 'D', markersize=4, color='k', label='Observations')
 
         ax[1][0].set_title('Gausian Process Variance', fontdict={'size': 15})
         im01 = ax[1][0].hexbin(x, y, C=s, gridsize=gridsize, cmap=cm.jet, bins=None)
@@ -121,7 +127,7 @@ if __name__ == "__main__":
         ax[0][1].set_title('Average Power Reduction as % Compared to Worst Case', fontdict={'size': 15})
         im10 = ax[0][1].hexbin(x, y, C=mu, gridsize=gridsize, cmap=cm.jet, bins=None)
         ax[0][1].axis([x.min(), x.max(), y.min(), y.max()])
-        ax[0][1].plot(do.X[:, 1], do.X[:, 0], 'D', markersize=4, color='k')
+        ax[0][1].plot(do.X[0:i, 0], do.X[0:i, 1], 'D', markersize=4, color='k')
 
         for im, axis in zip([im00, im10, im01, im11], ax.flatten()):
             cb = fig.colorbar(im, ax=axis)
@@ -130,4 +136,4 @@ if __name__ == "__main__":
         plt.tight_layout()
 
         # Save or show figure?
-        fig.savefig('gif/do_eg_' + str(i) + '.png')
+        fig.savefig(name + '/do_eg_' + str(i) + '.png')

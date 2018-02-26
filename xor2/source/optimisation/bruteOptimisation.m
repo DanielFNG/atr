@@ -16,7 +16,7 @@
 step_size = 0.5;
 
 % Domain of the thigh and shank cuffs.
-thigh_points = 5.0:step_size:10.0;
+thigh_points = 6.5:step_size:10.0;
 shank_points = 0.5:step_size:11.5;
 
 % For setting the results matrix values correctly. 
