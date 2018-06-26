@@ -17,17 +17,21 @@ shank_T = sortrows(table(shank_locs, shank_emg));
 
 % Fit the GP's.
 rng default
-gpfit_septic = fitrgp(T, 'emg', 'BasisFunction', @sexticBasis, 'Beta', 1, 'KernelFunction', 'squaredexponential');
-shank_gpfit_septic = fitrgp(shank_T, 'shank_emg', 'BasisFunction', @sexticBasis, 'Beta', 1, 'KernelFunction', 'squaredexponential');
+gpfit_sextic = fitrgp(T, 'emg', 'BasisFunction', @sexticBasis, 'Beta', 1, 'KernelFunction', 'squaredexponential');
+shank_gpfit_sextic = fitrgp(shank_T, 'shank_emg', 'BasisFunction', @sexticBasis, 'Beta', 1, 'KernelFunction', 'squaredexponential');
+
+% Save the GP fits for future use.
+save('thigh_fit.mat', 'gpfit_septic');
+save('shank_fit.mat', 'shank_gpfit_sextic');
 
 % Plot the thigh data. 
 figure;
 
 % Create test space.
-xtest = linspace(0,10,1000)';
+xtest = linspace(0,10,1000)'; % Sample space to 3 decimal places.
 
 % Get posterior (?)
-[pred, ~, ci] = predict(gpfit_septic, xtest);
+[pred, ~, ci] = predict(gpfit_sextic, xtest);
 
 % Create posterior/confidence interval plot.
 xtest_flipped = [xtest; flipud(xtest)];
@@ -51,7 +55,7 @@ figure;
 xtest = linspace(0.5, 11.5, 1000)';
 
 % Get posterior (?)
-[pred, ~, ci] = predict(shank_gpfit_septic, xtest);
+[pred, ~, ci] = predict(shank_gpfit_sextic, xtest);
 
 % Create posterior/confidence interval plot.
 xtest_flipped = [xtest; flipud(xtest)];
