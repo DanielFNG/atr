@@ -21,7 +21,7 @@ gpfit_sextic = fitrgp(T, 'emg', 'BasisFunction', @sexticBasis, 'Beta', 1, 'Kerne
 shank_gpfit_sextic = fitrgp(shank_T, 'shank_emg', 'BasisFunction', @sexticBasis, 'Beta', 1, 'KernelFunction', 'squaredexponential');
 
 % Save the GP fits for future use.
-save('thigh_fit.mat', 'gpfit_septic');
+save('thigh_fit.mat', 'gpfit_sextic');
 save('shank_fit.mat', 'shank_gpfit_sextic');
 
 % Plot the thigh data. 
