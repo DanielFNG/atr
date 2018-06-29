@@ -5,7 +5,7 @@ global XTrace;
 n_optimisations = 100;
 
 % Decide number of iterations to carry out per Bayesian Optimisation.
-n_iterations = 15;
+n_iterations = 20;
 
 % Set of acquisition functions to try.
 acquisition_functions = {'expected-improvement', ...
