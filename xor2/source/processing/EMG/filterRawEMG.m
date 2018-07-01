@@ -14,7 +14,7 @@ if numvarargs > 3
 end
 
 % Set defaults for optional inputs.
-optargs = {200 6 80};
+optargs = {200 2 30};
 
 % Overwrite the defaults if optional arguments are specified.
 [optargs{1:numvarargs}] = varargin{:};
@@ -25,7 +25,7 @@ optargs = {200 6 80};
 %% Perform filtering.
 % Filter.
 BPFiltEMGPointsAll = ZeroLagButtFiltfilt(...
-    (1/frequency), [lower_cutoff,upper_cutoff], 2, 'bp', raw_data);
+    (1/frequency), [lower_cutoff,upper_cutoff], 4, 'bp', raw_data);
 
 % Rectify.
 RectBPFiltEMGPointsAll = abs(BPFiltEMGPointsAll);

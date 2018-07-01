@@ -1,5 +1,6 @@
 % Uh oh.
 global XTrace;
+global ObservedXTrace;
 
 % Decide number of Bayesian Optimisations to carry out for averaging.
 n_optimisations = 100;
@@ -32,33 +33,40 @@ for k=1:n_optimisations
     for i=1:length(optimisation_variables)
         for j=1:length(acquisition_functions)
             XTrace = [];
+            ObservedXTrace = [];
             results = bayesopt(objective_functions{i}, ...
                 optimisation_variables{i}, ...
                 'AcquisitionFunctionName', acquisition_functions{j}, ...
                 'MaxObjectiveEvaluations', n_iterations, ...
-                'OutputFcn', @recordXAtMinEstimatedObjective);
+                'OutputFcn', @recordXAtMinEstimatedObjective, ...
+                'PlotFcn', []);
+            result_normal{k, i, j}.ObservedXTrace = ObservedXTrace;
             result_normal{k, i, j}.XTrace = XTrace;
             result_normal{k, i, j}.result = results;
             close('all');
         end
     end
 
-%     % Perform using acquisition-plus. 
-%     for i=1:length(optimisation_variables)
-%         for j=0:0.1:1.0
-%             XTrace = [];
-%             results = bayesopt(objective_functions{i}, ...
-%                 optimisation_variables{i}, ...
-%                 'AcquisitionFunctionName', acquisition_plus, ...
-%                 'MaxObjectiveEvaluations', n_iterations, ...
-%                 'ExplorationRatio', j, ...
-%                 'OutputFcn', @recordXAtMinEstimatedObjective);
-%             result_explore{k, i, round(10*(j+0.1))}.XTrace = XTrace;
-%             result_explore{k, i, round(10*(j+0.1))}.result = results;
-%             result_explore{k, i, round(10*(j+0.1))}.exploration = j;
-%             close('all');
-%         end
-%     end
+    % Perform using acquisition-plus. 
+    for i=1:length(optimisation_variables)
+        for j=0:0.1:1.0
+            XTrace = [];
+            ObservedXTrace = [];
+            results = bayesopt(objective_functions{i}, ...
+                optimisation_variables{i}, ...
+                'AcquisitionFunctionName', acquisition_plus, ...
+                'MaxObjectiveEvaluations', n_iterations, ...
+                'ExplorationRatio', j, ...
+                'OutputFcn', @recordXAtMinEstimatedObjective, ...
+                'PlotFcn', []);
+            result_explore{k, i, round(10*(j+0.1))}.ObservedXTrace = ...
+                ObservedXTrace;
+            result_explore{k, i, round(10*(j+0.1))}.XTrace = XTrace;
+            result_explore{k, i, round(10*(j+0.1))}.result = results;
+            result_explore{k, i, round(10*(j+0.1))}.exploration = j;
+            close('all');
+        end
+    end
 end
 
-save('bayes_opt_results.mat', 'result_normal', 'result_explore');
+save('bayes_opt_results_post_emg_changes.mat', 'result_normal', 'result_explore');

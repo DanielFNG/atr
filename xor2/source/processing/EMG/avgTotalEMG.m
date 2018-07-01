@@ -1,4 +1,5 @@
-function [val, sdev] = avgTotalEMG(processed_emg, time, peaks)
+function [val, sdev] = ...
+    avgTotalEMG(processed_emg, time, peaks)
 
 n_waves = length(peaks) - 1;
 measurements = zeros(n_waves,1);

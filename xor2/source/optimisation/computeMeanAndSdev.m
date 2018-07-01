@@ -1,4 +1,4 @@
-function result = computeMeanAndSdev(filename, channel)
+function result = computeMeanAndSdev(filename, channel, low_pass)
 
 % Indices for the non-assistance stage of the experiment, post-training.
 lrange_unassisted = 2000;
@@ -10,28 +10,28 @@ urange_assisted = 12000;
 
 % Load the correct file. In particular this gives us access to the 'ad3' 
 % (EMG), 'ad1' (encoder) and 'time' (time) arrays. 
-load(filename, 'ad3', 'time');
+load(filename, 'ad3', 'time', 'angle0');
 
-% Indices describing the start/end of each waveform in the region of 
-% interest according to the reference trajectory. This has been 
-% pre-calculated. Since we pass data in the range (lrange:urange), which 
-% then becomes stored as 1:(urange-lrange), we subtract (lrange-1) from 
-% raw_peaks to get the adjusted peaks.
-raw_peaks_unassisted = [2385,2833,3280,3725,4171,4615,5064,5510,5953];
-peaks_unassisted = raw_peaks_unassisted - (lrange_unassisted - 1);
+% Find the peaks to separate the EMG signals for the unassisted case.
+[~, peaks_unassisted] = findpeaks(angle0(...
+    lrange_unassisted + 150:urange_unassisted - 150, 2), ...
+    'MinPeakDistance', 250, 'NPeaks', 8);
+peaks_unassisted = peaks_unassisted + 150;
 
-% As above for assisted case. 
-raw_peaks_assisted = [8184,8630,9076,9522,9968,10414,10860,11306,11752];
-peaks_assisted = raw_peaks_assisted - (lrange_assisted - 1);
+% As above for assisted case.
+[~, peaks_assisted] = findpeaks(angle0(...
+    lrange_assisted + 150:urange_assisted - 150, 2), ...
+    'MinPeakDistance', 250, 'NPeaks', 8);
+peaks_assisted = peaks_assisted + 150;
 
 % Filter raw EMG then calculate the mean/sdev total EMG.
 unassisted_time = time(lrange_unassisted:urange_unassisted);
 assisted_time = time(lrange_assisted:urange_assisted);
 
 unassisted_emg = ...
-    filterRawEMG(ad3(lrange_unassisted:urange_unassisted, channel));
+    filterRawEMG(ad3(lrange_unassisted:urange_unassisted, channel), 200, 2, low_pass);
 assisted_emg = ...
-    filterRawEMG(ad3(lrange_assisted:urange_assisted, channel));
+    filterRawEMG(ad3(lrange_assisted:urange_assisted, channel), 200, 2, low_pass);
 [result.unassisted.mean, result.unassisted.sdev] = avgTotalEMG(...
     unassisted_emg, unassisted_time, peaks_unassisted);
 [result.assisted.mean, result.assisted.sdev] = avgTotalEMG(...

@@ -1,7 +1,7 @@
 % This script creates plots for the means and sdevs for the thigh.
 
-thigh_root = 'F:\Dropbox\PhD\Robio 2018\Data\XoR2Data\span';
-shank_root = 'F:\Dropbox\PhD\Robio 2018\Data\XoR2Data\shank_span';
+thigh_root = 'D:\Dropbox\PhD\Robio 2018\Data\XoR2Data\span';
+shank_root = 'D:\Dropbox\PhD\Robio 2018\Data\XoR2Data\shank_span';
 
 % Correct channels.
 thigh_channel = 4;
@@ -31,7 +31,7 @@ thigh_means = zeros(n_thigh_points,2);
 thigh_sdevs = zeros(n_thigh_points,2);
 
 for i=1:n_thigh_points
-    result = computeMeanAndSdev([thigh_root filesep thigh_names{i}], thigh_channel);
+    result = computeMeanAndSdev([thigh_root filesep thigh_names{i}], thigh_channel, 30);
     thigh_means(i,1) = result.unassisted.mean;
     thigh_sdevs(i,1) = result.unassisted.sdev;
     thigh_means(i,2) = result.assisted.mean;
@@ -43,7 +43,7 @@ shank_means = zeros(n_shank_points,2);
 shank_sdevs = zeros(n_shank_points,2);
 
 for i=1:n_shank_points
-    result = computeMeanAndSdev([shank_root filesep shank_names{i}], shank_channel);
+    result = computeMeanAndSdev([shank_root filesep shank_names{i}], shank_channel, 80);
     shank_means(i,1) = result.unassisted.mean;
     shank_sdevs(i,1) = result.unassisted.sdev;
     shank_means(i,2) = result.assisted.mean;
