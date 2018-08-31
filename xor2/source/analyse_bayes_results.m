@@ -60,14 +60,6 @@ for i=1:2
     end
     hold on;
     errorbar(ctr, ydt, errors, '.r');
-    
-    % Separate behaviour/plot for the exploration results. 
-    for L=1:15
-        for k=1:100
-            switch i
-                case 1 
-                    values(1,k) = predict(gpfit_sextic, ...
-                        result_explore{
 end
     
         
